@@ -1,151 +1,59 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { qrService } from '@/services/qrService';
-import { securityService, SecurityCheckResult } from '@/services/securityService';
-import { supabase } from '@/integrations/supabase/client';
+import { useRedirect } from '@/hooks/useRedirect';
+import { securityService } from '@/services/securityService';
 import { Card } from '@/components/ui/card';
 import { Shield, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Redirect = () => {
   const { shortCode } = useParams<{ shortCode: string }>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(4);
   const [isSecurityCheck, setIsSecurityCheck] = useState(true);
-  const [securityResult, setSecurityResult] = useState<SecurityCheckResult | null>(null);
   const [securityPhase, setSecurityPhase] = useState<'checking' | 'complete' | 'blocked'>('checking');
+  
+  const { data: redirectData, isLoading, error } = useRedirect(shortCode || '');
 
   useEffect(() => {
-    const handleRedirect = async () => {
-      console.log('=== REDIRECT DEBUG ===');
-      console.log('Current URL:', window.location.href);
-      console.log('Short code from params:', shortCode);
-      console.log('Full pathname:', window.location.pathname);
-      
-      if (!shortCode) {
-        console.log('No short code provided');
-        setError('Invalid QR code');
-        setLoading(false);
-        return;
+    if (!redirectData || !redirectData.securityResult) return;
+
+    // Show security results
+    setTimeout(() => {
+      if (redirectData.securityResult.isSafe) {
+        setSecurityPhase('complete');
+        setIsSecurityCheck(false);
+        
+        // Start countdown for safe URLs
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              console.log('Redirecting to:', redirectData.finalUrl);
+              window.location.href = redirectData.finalUrl;
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        
+        // Cleanup function
+        return () => clearInterval(timer);
+      } else {
+        // Block malicious URLs
+        setSecurityPhase('blocked');
+        setIsSecurityCheck(false);
+        console.log('🚨 Malicious URL blocked:', redirectData.finalUrl);
       }
-
-      try {
-        console.log('Looking up QR code for short code:', shortCode);
-        
-        // Check if we can connect to Supabase at all
-        console.log('Testing Supabase connection...');
-        const { data: testData, error: testError } = await supabase
-          .from('qr_codes')
-          .select('count')
-          .limit(1);
-        
-        console.log('Supabase test result:', { testData, testError });
-        
-        // Get QR code data
-        const qrCode = await qrService.getQRCodeByShortCode(shortCode);
-        
-        console.log('QR code lookup result:', qrCode);
-        
-        if (!qrCode) {
-          console.log('QR code not found in database');
-          setError('QR code not found');
-          setLoading(false);
-          return;
-        }
-
-        // Get time-aware redirect URL (will handle pro user check and time rules)
-        const timeAwareUrl = await qrService.getTimeAwareRedirectUrl(shortCode);
-        
-        console.log('Time-aware URL result:', timeAwareUrl);
-        
-        if (!timeAwareUrl) {
-          console.log('Time-aware redirect failed, falling back to original URL');
-          setError('Failed to process redirect');
-          setLoading(false);
-          return;
-        }
-
-        // Collect analytics data
-        const userAgent = navigator.userAgent;
-        const deviceType = qrService.detectDeviceType(userAgent);
-        const browser = qrService.detectBrowser(userAgent);
-        
-        // Ensure URL has proper protocol for redirect
-        const finalUrl = timeAwareUrl.match(/^https?:\/\//) 
-          ? timeAwareUrl 
-          : `https://${timeAwareUrl}`;
-        
-        console.log('Final redirect URL:', finalUrl);
-        setRedirectUrl(finalUrl);
-        setLoading(false);
-
-        // Perform actual security check
-        console.log('🔍 Starting security validation...');
-        const securityCheck = await securityService.checkUrl(finalUrl);
-        setSecurityResult(securityCheck);
-        
-        // Track the scan asynchronously (don't block redirect)
-        const trackScan = async () => {
-          try {
-            await qrService.trackQRCodeScan(qrCode.id!, {
-              user_agent: userAgent,
-              referer: document.referrer,
-              device_type: deviceType,
-              browser: browser,
-            });
-          } catch (err) {
-            console.error('Analytics tracking failed:', err);
-          }
-        };
-        trackScan();
-
-        // Show security results
-        setTimeout(() => {
-          if (securityCheck.isSafe) {
-            setSecurityPhase('complete');
-            setIsSecurityCheck(false);
-            
-            // Start countdown for safe URLs
-            const timer = setInterval(() => {
-              setCountdown((prev) => {
-                if (prev <= 1) {
-                  clearInterval(timer);
-                  console.log('Redirecting to:', finalUrl);
-                  window.location.href = finalUrl;
-                  return 0;
-                }
-                return prev - 1;
-              });
-            }, 1000);
-            
-            // Cleanup function
-            return () => clearInterval(timer);
-          } else {
-            // Block malicious URLs
-            setSecurityPhase('blocked');
-            setIsSecurityCheck(false);
-            console.log('🚨 Malicious URL blocked:', finalUrl);
-          }
-        }, 2000); // Allow 2 seconds for security check to complete
-      } catch (err) {
-        console.error('Redirect error:', err);
-        setError('Failed to process QR code');
-        setLoading(false);
-      }
-    };
-
-    handleRedirect();
-  }, [shortCode]);
+    }, 2000); // Allow 2 seconds for security check to complete
+  }, [redirectData]);
 
   const handleManualRedirect = () => {
-    if (redirectUrl) {
-      window.location.href = redirectUrl;
+    if (redirectData?.finalUrl) {
+      window.location.href = redirectData.finalUrl;
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="brutal-card p-8 max-w-md w-full mx-4">
@@ -166,7 +74,7 @@ const Redirect = () => {
           <div className="text-center space-y-4">
             <AlertTriangle className="w-12 h-12 mx-auto text-destructive" />
             <h1 className="text-2xl font-bold uppercase text-destructive">QR Code Error</h1>
-            <p className="text-muted-foreground">{error}</p>
+            <p className="text-muted-foreground">{error.message}</p>
             <Button 
               onClick={() => window.location.href = '/'}
               className="w-full"
@@ -232,8 +140,9 @@ const Redirect = () => {
   };
 
   const renderSecurityDetails = () => {
-    if (!securityResult) return null;
+    if (!redirectData?.securityResult) return null;
 
+    const securityResult = redirectData.securityResult;
     const getBorderColor = () => {
       if (securityPhase === 'blocked') return 'border-red-500 bg-red-50';
       if (securityResult.score >= 90) return 'border-green-500 bg-green-50';
@@ -249,7 +158,7 @@ const Redirect = () => {
             Security Check Complete
           </p>
         </div>
-        <p className="text-sm break-all font-bold mb-2">{redirectUrl}</p>
+        <p className="text-sm break-all font-bold mb-2">{redirectData.finalUrl}</p>
         
         {securityResult.threats.length > 0 && (
           <div className="text-xs text-red-700 space-y-1">
@@ -288,11 +197,11 @@ const Redirect = () => {
 
           {renderSecurityDetails()}
 
-          {securityPhase === 'blocked' && securityResult && (
+          {securityPhase === 'blocked' && redirectData?.securityResult && (
             <div className="space-y-3">
               <div className="text-left space-y-2">
                 <h3 className="font-bold text-red-600">Security Advice:</h3>
-                {securityService.getSecurityAdvice(securityResult).map((advice, i) => (
+                {securityService.getSecurityAdvice(redirectData.securityResult).map((advice, i) => (
                   <p key={i} className="text-sm text-red-700">{advice}</p>
                 ))}
               </div>

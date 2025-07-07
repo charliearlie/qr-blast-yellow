@@ -12,6 +12,7 @@ import QRShapeSelector from './QRShapeSelector';
 import QRBorderSelector from './QRBorderSelector';
 import AuthModal from './AuthModal';
 import TimeRuleManager, { TimeRule } from './TimeRuleManager';
+import GeoRuleManager, { GeoRule } from './GeoRuleManager';
 import ProFeatureGuard from './ProFeatureGuard';
 import SaveButtons from './SaveButtons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,6 +34,7 @@ const QRGenerator = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [currentQRCode, setCurrentQRCode] = useState<QRCodeData | null>(null);
   const [timeRules, setTimeRules] = useState<TimeRule[]>([]);
+  const [geoRules, setGeoRules] = useState<GeoRule[]>([]);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCodeRef = useRef<QRCodeStyling | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -208,6 +210,10 @@ const QRGenerator = () => {
 
     setIsSaving(true);
     try {
+      console.log('=== SAVING QR CODE ===');
+      console.log('Time rules being saved:', timeRules);
+      console.log('Geo rules being saved:', geoRules);
+      
       const qrData = {
         title: title.trim(),
         original_url: url.trim(),
@@ -222,10 +228,14 @@ const QRGenerator = () => {
           borderWidth,
           logo,
           timeRules,
+          geoRules,
         },
       };
 
+      console.log('Complete qrData object:', JSON.stringify(qrData, null, 2));
+
       const savedQRCode = await qrService.createQRCode(qrData);
+      console.log('Saved QR code response:', savedQRCode);
       setCurrentQRCode(savedQRCode);
       
       toast({
@@ -265,6 +275,7 @@ const QRGenerator = () => {
     setUrl('');
     setLogo(null);
     setTimeRules([]);
+    setGeoRules([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -311,10 +322,11 @@ const QRGenerator = () => {
         {/* Input Section */}
         <Card className="brutal-card p-8 space-y-6">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="basic">Basic</TabsTrigger>
               <TabsTrigger value="shapes">Shapes</TabsTrigger>
               <TabsTrigger value="borders">Borders</TabsTrigger>
+              <TabsTrigger value="geo">Geo</TabsTrigger>
               <TabsTrigger value="time">Time Rules</TabsTrigger>
             </TabsList>
             
@@ -442,8 +454,9 @@ const QRGenerator = () => {
               {user && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-lg font-bold uppercase">Enable Analytics</Label>
+                    <Label htmlFor="analytics-switch" className="text-lg font-bold uppercase">Enable Analytics</Label>
                     <Switch
+                      id="analytics-switch"
                       checked={enableAnalytics}
                       onCheckedChange={setEnableAnalytics}
                     />
@@ -483,6 +496,16 @@ const QRGenerator = () => {
                 onBorderColorChange={setBorderColor}
                 onBorderWidthChange={setBorderWidth}
               />
+            </TabsContent>
+            
+            <TabsContent value="geo">
+              <ProFeatureGuard>
+                <GeoRuleManager
+                  rules={geoRules}
+                  onRulesChange={setGeoRules}
+                  defaultUrl={url || 'https://example.com'}
+                />
+              </ProFeatureGuard>
             </TabsContent>
             
             <TabsContent value="time">

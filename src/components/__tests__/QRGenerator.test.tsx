@@ -37,11 +37,13 @@ vi.mock('@/services/qrService', () => ({
 
 // Mock child components
 vi.mock('../QRShapeSelector', () => ({
-  default: ({ onShapeChange, currentShape }: any) => (
+  default: ({ dotsType, cornersSquareType, cornersDotType, onDotsTypeChange, onCornersSquareTypeChange, onCornersDotTypeChange }: any) => (
     <div data-testid="qr-shape-selector">
-      <button onClick={() => onShapeChange('square')}>Square</button>
-      <button onClick={() => onShapeChange('rounded')}>Rounded</button>
-      <span>Current: {currentShape}</span>
+      <div>Data Pattern: {dotsType}</div>
+      <div>Corner Square: {cornersSquareType}</div>
+      <div>Corner Dot: {cornersDotType}</div>
+      <button onClick={() => onDotsTypeChange('square')}>Square</button>
+      <button onClick={() => onDotsTypeChange('rounded')}>Rounded</button>
     </div>
   ),
 }));
@@ -52,7 +54,7 @@ vi.mock('../QRBorderSelector', () => ({
       <button onClick={() => onBorderChange({ style: 'solid', color: '#000', width: 2 })}>
         Solid Border
       </button>
-      <span>Current: {currentBorder.style}</span>
+      <span>Current: {currentBorder?.style || 'none'}</span>
     </div>
   ),
 }));
@@ -60,6 +62,19 @@ vi.mock('../QRBorderSelector', () => ({
 vi.mock('../AuthModal', () => ({
   default: ({ open, onOpenChange }: any) => (
     open ? <div data-testid="auth-modal">Auth Modal</div> : null
+  ),
+}));
+
+vi.mock('../GeoRuleManager', () => ({
+  default: ({ rules, onRulesChange, defaultUrl }: any) => (
+    <div data-testid="geo-rule-manager">
+      <div>Geo Rules Manager</div>
+      <div>Rules count: {rules.length}</div>
+      <div>Default URL: {defaultUrl}</div>
+      <button onClick={() => onRulesChange([...rules, { id: 'test', type: 'radius', lat: 40, lon: -74, radius_km: 10, url: 'https://test.com' }])}>
+        Add Geo Rule
+      </button>
+    </div>
   ),
 }));
 
@@ -105,7 +120,7 @@ describe('QRGenerator', () => {
       
       expect(screen.getByLabelText(/website url/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/qr code title/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/company logo/i)).toBeInTheDocument();
+      expect(screen.getByText(/upload logo/i)).toBeInTheDocument();
     });
 
     it('should render all tabs', () => {
@@ -114,6 +129,7 @@ describe('QRGenerator', () => {
       expect(screen.getByText('Basic')).toBeInTheDocument();
       expect(screen.getByText('Shapes')).toBeInTheDocument();
       expect(screen.getByText('Borders')).toBeInTheDocument();
+      expect(screen.getByText('Geo')).toBeInTheDocument();
       expect(screen.getByText('Time Rules')).toBeInTheDocument();
     });
 
@@ -216,7 +232,7 @@ describe('QRGenerator', () => {
       await user.click(screen.getByText('Shapes'));
       
       const shapeSelector = screen.getByTestId('qr-shape-selector');
-      expect(shapeSelector).toHaveTextContent('Current: square');
+      expect(shapeSelector).toHaveTextContent('Data Pattern: square');
       
       await user.click(screen.getByText('Rounded'));
       // The shape would be updated (we're testing the component integration)
@@ -261,6 +277,54 @@ describe('QRGenerator', () => {
     });
   });
 
+  describe('Geo Rules', () => {
+    it('should render geo rule manager in geo tab', async () => {
+      const user = userEvent.setup();
+      render(<QRGenerator />);
+      
+      await user.click(screen.getByText('Geo'));
+      
+      expect(screen.getByTestId('geo-rule-manager')).toBeInTheDocument();
+      expect(screen.getByTestId('pro-feature-guard')).toBeInTheDocument();
+    });
+
+    it('should show current URL as default in geo rules', async () => {
+      const user = userEvent.setup();
+      render(<QRGenerator />);
+      
+      // Set a URL first
+      const urlInput = screen.getByLabelText(/website url/i);
+      await user.type(urlInput, 'https://example.com');
+      
+      await user.click(screen.getByText('Geo'));
+      
+      expect(screen.getByText('Default URL: https://example.com')).toBeInTheDocument();
+    });
+
+    it('should update geo rules when manager is used', async () => {
+      const user = userEvent.setup();
+      render(<QRGenerator />);
+      
+      await user.click(screen.getByText('Geo'));
+      
+      const geoRuleManager = screen.getByTestId('geo-rule-manager');
+      expect(geoRuleManager).toHaveTextContent('Rules count: 0');
+      
+      await user.click(screen.getByText('Add Geo Rule'));
+      // Geo rules would be updated in the parent component
+    });
+
+    it('should render all five tabs including geo', () => {
+      render(<QRGenerator />);
+      
+      expect(screen.getByText('Basic')).toBeInTheDocument();
+      expect(screen.getByText('Shapes')).toBeInTheDocument();
+      expect(screen.getByText('Borders')).toBeInTheDocument();
+      expect(screen.getByText('Geo')).toBeInTheDocument();
+      expect(screen.getByText('Time Rules')).toBeInTheDocument();
+    });
+  });
+
   describe('Save Functionality', () => {
     it('should render save buttons', () => {
       render(<QRGenerator />);
@@ -277,62 +341,78 @@ describe('QRGenerator', () => {
   });
 
   describe('Color Customization', () => {
-    it('should render color controls in shapes tab', async () => {
-      const user = userEvent.setup();
+    it('should render color controls in basic tab', async () => {
       render(<QRGenerator />);
       
-      await user.click(screen.getByText('Shapes'));
-      
-      // Look for color inputs
+      // Color controls are in the basic tab, not shapes tab
       expect(screen.getByLabelText(/qr color/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/background color/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/background/i)).toBeInTheDocument();
     });
 
-    it('should update color inputs', async () => {
+    it('should render color inputs with default values', async () => {
+      render(<QRGenerator />);
+      
+      // Color controls are in the basic tab by default
+      const qrColorLabel = screen.getByLabelText(/qr color/i);
+      const bgColorLabel = screen.getByLabelText(/background/i);
+      
+      expect(qrColorLabel).toBeInTheDocument();
+      expect(bgColorLabel).toBeInTheDocument();
+      
+      // Check that default color values are present (multiple inputs can have same value)
+      const blackInputs = screen.getAllByDisplayValue('#000000');
+      const whiteInputs = screen.getAllByDisplayValue('#FFFFFF');
+      
+      expect(blackInputs.length).toBeGreaterThan(0);
+      expect(whiteInputs.length).toBeGreaterThan(0);
+    });
+
+    it('should show color contrast warning when colors are similar', async () => {
       const user = userEvent.setup();
       render(<QRGenerator />);
       
-      await user.click(screen.getByText('Shapes'));
+      // Enter a URL to trigger QR generation
+      const urlInput = screen.getByLabelText(/website url/i);
+      await user.type(urlInput, 'example.com');
       
-      const qrColorInput = screen.getByLabelText(/qr color/i);
-      const bgColorInput = screen.getByLabelText(/background color/i);
+      // Find text inputs for colors
+      const colorInputs = screen.getAllByDisplayValue(/^#[0-9A-Fa-f]{6}$/);
+      const qrColorInput = colorInputs[0]; // QR color
+      const bgColorInput = colorInputs[1]; // Background color
       
-      await user.clear(qrColorInput);
-      await user.type(qrColorInput, '#ff0000');
-      await user.clear(bgColorInput);
-      await user.type(bgColorInput, '#ffffff');
+      // Set similar colors to trigger contrast warning
+      await user.click(qrColorInput);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.type(qrColorInput, '#000000');
       
-      expect(qrColorInput).toHaveValue('#ff0000');
-      expect(bgColorInput).toHaveValue('#ffffff');
-    });
-
-    it('should show color contrast warning', async () => {
-      const user = userEvent.setup();
-      render(<QRGenerator />);
+      await user.click(bgColorInput);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.type(bgColorInput, '#111111');
       
-      await user.click(screen.getByText('Shapes'));
-      
-      // Should show low contrast indicator when colors are similar
-      expect(screen.getByText(/contrast/i)).toBeInTheDocument();
+      // Should show low contrast warning
+      expect(screen.getByText(/colors too similar/i)).toBeInTheDocument();
     });
   });
 
   describe('Download Functionality', () => {
-    it('should show download buttons', () => {
+    it('should show download button when QR is valid', async () => {
+      const user = userEvent.setup();
       render(<QRGenerator />);
       
-      // Look for download buttons
-      expect(screen.getByText(/download png/i)).toBeInTheDocument();
-      expect(screen.getByText(/download svg/i)).toBeInTheDocument();
+      // Enter a URL to show download button
+      const urlInput = screen.getByLabelText(/website url/i);
+      await user.type(urlInput, 'https://example.com');
+      
+      expect(screen.getByText(/download qr code/i)).toBeInTheDocument();
     });
   });
 
   describe('QR Code Display', () => {
-    it('should show QR code preview', () => {
+    it('should show QR code placeholder initially', () => {
       render(<QRGenerator />);
       
-      // The QR code container should be present
-      expect(screen.getByText(/qr code preview/i)).toBeInTheDocument();
+      // Should show placeholder text initially
+      expect(screen.getByText(/qr code will appear here/i)).toBeInTheDocument();
     });
 
     it('should update QR code when URL changes', async () => {

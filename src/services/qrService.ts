@@ -8,6 +8,15 @@ export interface TimeRule {
   label?: string;
 }
 
+export interface GeoRule {
+  id: string;
+  lat: number;
+  lon: number;
+  radius_km: number;
+  url: string;
+  label?: string;
+}
+
 export interface QRCodeData {
   id?: string;
   title: string;
@@ -25,6 +34,7 @@ export interface QRCodeData {
     borderWidth: number;
     logo?: string;
     timeRules?: TimeRule[];
+    geoRules?: GeoRule[];
   };
   scan_count?: number;
   created_at?: string;
@@ -177,17 +187,35 @@ class QRService {
   }
 
   async getTimeAwareRedirectUrl(shortCode: string): Promise<string | null> {
+    console.log('=== TIME-AWARE REDIRECT ===');
     console.log('Getting time-aware redirect URL for short code:', shortCode);
+    console.log('Current time:', new Date().toISOString());
+    console.log('Current UTC time:', new Date().toUTCString());
+    
+    // First, let's verify the QR code exists
+    const { data: qrCheck, error: qrError } = await supabase
+      .from('qr_codes')
+      .select('short_code, original_url, qr_settings')
+      .eq('short_code', shortCode)
+      .single();
+    
+    console.log('QR code check:', qrCheck);
+    console.log('QR code check error:', qrError);
     
     const { data: redirectUrl, error } = await supabase
       .rpc('get_redirect_url_for_short_code', { p_short_code: shortCode });
 
     if (error) {
       console.error('Time-aware redirect error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       return null;
     }
 
-    console.log('Time-aware redirect URL:', redirectUrl);
+    console.log('Time-aware redirect URL received from database:', redirectUrl);
+    console.log('Type of redirectUrl:', typeof redirectUrl);
+    console.log('Is redirectUrl null?', redirectUrl === null);
+    console.log('Is redirectUrl undefined?', redirectUrl === undefined);
+    console.log('=== END TIME-AWARE REDIRECT ===');
     return redirectUrl;
   }
 

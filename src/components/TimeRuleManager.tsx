@@ -32,34 +32,50 @@ const TimeRuleManager: React.FC<TimeRuleManagerProps> = ({
   });
 
   const convertLocalTimeToUTC = (localTime: string): string => {
-    // Create a date object with today's date and the local time
-    const today = new Date();
-    const localTimeDate = new Date(`${today.toDateString()} ${localTime}`);
+    // Parse the time components
+    const [hours, minutes] = localTime.split(':').map(Number);
     
-    // Convert to UTC by adding the timezone offset
-    const utcTime = new Date(localTimeDate.getTime() - (localTimeDate.getTimezoneOffset() * 60000));
+    // Create a date in local time
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    
+    // Get UTC hours and minutes
+    const utcHours = date.getUTCHours();
+    const utcMinutes = date.getUTCMinutes();
     
     // Return in HH:MM format
-    return utcTime.toTimeString().slice(0, 5);
+    return `${utcHours.toString().padStart(2, '0')}:${utcMinutes.toString().padStart(2, '0')}`;
   };
 
   const convertUTCTimeToLocal = (utcTime: string): string => {
-    // Create a date object with today's date and the UTC time
-    const today = new Date();
-    const utcTimeDate = new Date(`${today.toDateString()} ${utcTime} UTC`);
+    // Parse the time components
+    const [hours, minutes] = utcTime.split(':').map(Number);
     
-    // Convert to local time
-    const localTime = new Date(utcTimeDate.getTime() + (utcTimeDate.getTimezoneOffset() * 60000));
+    // Create a date in UTC
+    const date = new Date();
+    date.setUTCHours(hours, minutes, 0, 0);
+    
+    // Get local hours and minutes
+    const localHours = date.getHours();
+    const localMinutes = date.getMinutes();
     
     // Return in HH:MM format
-    return localTime.toTimeString().slice(0, 5);
+    return `${localHours.toString().padStart(2, '0')}:${localMinutes.toString().padStart(2, '0')}`;
   };
 
   const addRule = () => {
     if (newRule.startTime && newRule.endTime && newRule.url) {
+      console.log('=== ADDING TIME RULE ===');
+      console.log('Local start time:', newRule.startTime);
+      console.log('Local end time:', newRule.endTime);
+      
       // Convert local times to UTC for storage
       const startTimeUTC = convertLocalTimeToUTC(newRule.startTime);
       const endTimeUTC = convertLocalTimeToUTC(newRule.endTime);
+      
+      console.log('UTC start time:', startTimeUTC);
+      console.log('UTC end time:', endTimeUTC);
+      console.log('URL:', newRule.url);
       
       const rule: TimeRule = {
         id: Date.now().toString(),
@@ -68,6 +84,8 @@ const TimeRuleManager: React.FC<TimeRuleManagerProps> = ({
         url: newRule.url,
         label: newRule.label || `${newRule.startTime} - ${newRule.endTime}` // Keep original local time in label
       };
+      
+      console.log('Complete rule object:', rule);
       
       onRulesChange([...rules, rule]);
       setNewRule({
@@ -92,27 +110,51 @@ const TimeRuleManager: React.FC<TimeRuleManagerProps> = ({
   };
 
   const getCurrentTimeStatus = () => {
-    // Get current time in user's local timezone
+    // Get current time in UTC for comparison with stored rules
     const now = new Date();
-    const currentLocalTime = now.toTimeString().slice(0, 5); // HH:MM format
+    const currentUTCHours = now.getUTCHours();
+    const currentUTCMinutes = now.getUTCMinutes();
+    const currentUTCTime = `${currentUTCHours.toString().padStart(2, '0')}:${currentUTCMinutes.toString().padStart(2, '0')}`;
     
-    // Convert current local time to UTC for comparison with stored rules
-    const todayUTC = new Date();
-    const localTimeDate = new Date(`${todayUTC.toDateString()} ${currentLocalTime}`);
-    const utcTime = new Date(localTimeDate.getTime() - (localTimeDate.getTimezoneOffset() * 60000));
-    const currentUTCTime = utcTime.toTimeString().slice(0, 5);
+    console.log('=== TIME RULE STATUS CHECK ===');
+    console.log('Current UTC time:', currentUTCTime);
+    console.log('Current local time:', now.toTimeString().slice(0, 5));
+    console.log('Number of rules:', rules.length);
     
     for (const rule of rules) {
+      console.log('Checking rule:', rule);
+      console.log(`Rule time range: ${rule.startTime} - ${rule.endTime}`);
+      
       // Rules are stored in UTC, so compare with UTC time
-      if (currentUTCTime >= rule.startTime && currentUTCTime < rule.endTime) {
-        return {
-          isActive: true,
-          activeRule: rule,
-          nextUrl: rule.url
-        };
+      // Handle rules that cross midnight
+      if (rule.startTime > rule.endTime) {
+        // Rule crosses midnight (e.g., 21:00 - 01:00)
+        const matches = currentUTCTime >= rule.startTime || currentUTCTime < rule.endTime;
+        console.log('Midnight crossover rule, matches:', matches);
+        if (matches) {
+          console.log('✓ Active rule found:', rule.label);
+          return {
+            isActive: true,
+            activeRule: rule,
+            nextUrl: rule.url
+          };
+        }
+      } else {
+        // Normal rule (e.g., 09:00 - 17:00)
+        const matches = currentUTCTime >= rule.startTime && currentUTCTime < rule.endTime;
+        console.log('Normal rule, matches:', matches);
+        if (matches) {
+          console.log('✓ Active rule found:', rule.label);
+          return {
+            isActive: true,
+            activeRule: rule,
+            nextUrl: rule.url
+          };
+        }
       }
     }
     
+    console.log('No active rules, using default URL');
     return {
       isActive: false,
       activeRule: null,

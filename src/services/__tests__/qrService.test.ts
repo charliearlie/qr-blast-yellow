@@ -348,6 +348,26 @@ describe('qrService', () => {
   describe('Time-Aware Redirect', () => {
     it('should call the time-aware RPC function', async () => {
       const mockUrl = 'https://time-aware-result.com';
+      
+      // Mock the QR code check that happens first
+      const mockFrom = vi.mocked(supabase.from);
+      const mockSelect = vi.fn().mockReturnThis();
+      const mockEq = vi.fn().mockReturnThis();
+      const mockSingle = vi.fn().mockResolvedValueOnce({
+        data: { short_code: 'ABC123' },
+        error: null,
+      });
+      
+      mockFrom.mockReturnValueOnce({
+        select: mockSelect,
+      } as any);
+      mockSelect.mockReturnValueOnce({
+        eq: mockEq,
+      } as any);
+      mockEq.mockReturnValueOnce({
+        single: mockSingle,
+      } as any);
+      
       vi.mocked(supabase.rpc).mockResolvedValue({ data: mockUrl, error: null });
 
       const result = await qrService.getTimeAwareRedirectUrl('ABC123');
@@ -359,6 +379,19 @@ describe('qrService', () => {
     });
 
     it('should return null on RPC error', async () => {
+      // Mock the QR code check that happens first
+      const mockFrom = vi.mocked(supabase.from);
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { short_code: 'ABC123' },
+              error: null,
+            }),
+          }),
+        }),
+      } as any);
+      
       vi.mocked(supabase.rpc).mockResolvedValue({ 
         data: null, 
         error: { message: 'Function error' } 
@@ -371,6 +404,20 @@ describe('qrService', () => {
 
     it('should log errors appropriately', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
+      // Mock the QR code check that happens first
+      const mockFrom = vi.mocked(supabase.from);
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { short_code: 'ABC123' },
+              error: null,
+            }),
+          }),
+        }),
+      } as any);
+      
       vi.mocked(supabase.rpc).mockResolvedValue({ 
         data: null, 
         error: { message: 'Permission denied' } 
