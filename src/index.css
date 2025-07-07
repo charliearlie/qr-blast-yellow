@@ -144,4 +144,46 @@ All colors MUST be HSL.
     @apply bg-[hsl(var(--ad-bg))] border-[hsl(var(--ad-border))] rounded-none;
     border: var(--ad-border);
   }
+
+  /* Additional Brutal Components */
+  .brutal-card-yellow {
+    @apply bg-yellow-100 border-4 border-black shadow-[4px_4px_0px_black] transition-all duration-75;
+  }
+
+  .brutal-card-hover {
+    @apply bg-card border-4 border-border shadow-[8px_8px_0px_hsl(var(--border))] transition-all duration-150;
+  }
+
+  .brutal-card-hover:hover {
+    @apply shadow-[12px_12px_0px_hsl(var(--border))] translate-x-[-2px] translate-y-[-2px];
+  }
+
+  .brutal-button-small {
+    @apply border-2 border-border shadow-[3px_3px_0px_hsl(var(--border))] transition-all duration-75;
+  }
+
+  .brutal-button-small:hover {
+    @apply shadow-[1px_1px_0px_hsl(var(--border))] translate-x-[2px] translate-y-[2px];
+  }
+
+  .brutal-button-small:active {
+    @apply shadow-none translate-x-[3px] translate-y-[3px];
+  }
+
+  /* QR Code Preview specific styles */
+  .qr-preview-container canvas {
+    @apply border-0 !important;
+  }
+
+  .qr-modal-container canvas {
+    @apply border-0 !important;
+  }
+
+  /* Line clamp utility */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }

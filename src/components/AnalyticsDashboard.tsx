@@ -118,12 +118,12 @@ const AnalyticsDashboard = ({ qrCode, onClose }: AnalyticsDashboardProps) => {
           <p className="text-muted-foreground break-all">{qrCode.original_url}</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={exportAnalytics} variant="outline" size="sm">
+          <Button onClick={exportAnalytics} variant="outline" size="sm" className="brutal-button">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
           {onClose && (
-            <Button onClick={onClose} variant="outline" size="sm">
+            <Button onClick={onClose} variant="outline" size="sm" className="brutal-button">
               Close
             </Button>
           )}

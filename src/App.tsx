@@ -9,6 +9,8 @@ import Layout from "@/components/Layout";
 import HomePage from "./pages/HomePage";
 import DashboardPage from "./pages/DashboardPage";
 import QRDetailPage from "./pages/QRDetailPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import EditQRPage from "./pages/EditQRPage";
 import LoginPage from "./pages/LoginPage";
 import Redirect from "./pages/Redirect";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -29,6 +31,8 @@ const App = () => (
               <Route path="/generate" element={<Layout><HomePage /></Layout>} />
               <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
               <Route path="/qr/:id" element={<Layout><QRDetailPage /></Layout>} />
+              <Route path="/analytics/:id" element={<Layout><AnalyticsPage /></Layout>} />
+              <Route path="/edit/:id" element={<Layout><EditQRPage /></Layout>} />
               
               {/* Standalone Routes (no layout) */}
               <Route path="/login" element={<LoginPage />} />
