@@ -1,14 +1,18 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Allow: /generate
+Allow: /login
+Allow: /about
+Allow: /privacy
+Allow: /terms
+
+# Disallow private/dynamic routes
+Disallow: /dashboard
+Disallow: /qr/
+Disallow: /r/
+
+# Crawl-delay for politeness
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: /sitemap.xml

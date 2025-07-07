@@ -1,20 +1,39 @@
-import { useState, useRef } from 'react';
-import { QRCode } from 'react-qrcode-logo';
+import { useState, useRef, useEffect } from 'react';
+import QRCodeStyling from 'qr-code-styling';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Download, Upload, Palette, AlertTriangle } from 'lucide-react';
+import { Download, Upload, Palette, AlertTriangle, Save, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { qrService } from '@/services/qrService';
+import QRShapeSelector from './QRShapeSelector';
+import QRBorderSelector from './QRBorderSelector';
+import AuthModal from './AuthModal';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 
 const QRGenerator = () => {
   const [url, setUrl] = useState('');
+  const [title, setTitle] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
   const [qrColor, setQrColor] = useState('#000000');
   const [bgColor, setBgColor] = useState('#FFFFFF');
-  const qrRef = useRef<any>(null);
+  const [dotsType, setDotsType] = useState('square');
+  const [cornersSquareType, setCornersSquareType] = useState('square');
+  const [cornersDotType, setCornersDotType] = useState('square');
+  const [borderStyle, setBorderStyle] = useState('none');
+  const [borderColor, setBorderColor] = useState('#000000');
+  const [borderWidth, setBorderWidth] = useState(4);
+  const [enableAnalytics, setEnableAnalytics] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentQRCode, setCurrentQRCode] = useState<any>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
+  const qrCodeRef = useRef<QRCodeStyling | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Check if colors are too similar
   const getColorContrast = (color1: string, color2: string) => {
@@ -78,17 +97,170 @@ const QRGenerator = () => {
     }
   };
 
+  useEffect(() => {
+    const displayUrl = getDisplayUrl();
+    console.log('=== QR CODE GENERATION ===');
+    console.log('Display URL for QR code:', displayUrl);
+    console.log('Current QR Code object:', currentQRCode);
+    console.log('User:', user ? 'authenticated' : 'not authenticated');
+    console.log('Analytics enabled:', enableAnalytics);
+    
+    if (!qrCodeRef.current) {
+      qrCodeRef.current = new QRCodeStyling({
+        width: 350,
+        height: 350,
+        type: 'svg',
+        data: displayUrl,
+        dotsOptions: {
+          color: qrColor,
+          type: dotsType as any,
+        },
+        cornersSquareOptions: {
+          color: qrColor,
+          type: cornersSquareType as any,
+        },
+        cornersDotOptions: {
+          color: qrColor,
+          type: cornersDotType as any,
+        },
+        backgroundOptions: {
+          color: bgColor,
+        },
+        imageOptions: {
+          crossOrigin: 'anonymous',
+          margin: 10,
+        },
+      });
+    }
+
+    qrCodeRef.current.update({
+      data: displayUrl,
+      dotsOptions: {
+        color: qrColor,
+        type: dotsType as any,
+      },
+      cornersSquareOptions: {
+        color: qrColor,
+        type: cornersSquareType as any,
+      },
+      cornersDotOptions: {
+        color: qrColor,
+        type: cornersDotType as any,
+      },
+      backgroundOptions: {
+        color: bgColor,
+      },
+      image: logo || undefined,
+    });
+
+    if (qrRef.current) {
+      qrRef.current.innerHTML = '';
+      qrCodeRef.current.append(qrRef.current);
+    }
+  }, [url, qrColor, bgColor, dotsType, cornersSquareType, cornersDotType, logo, enableAnalytics, currentQRCode]);
+
+  const getDisplayUrl = () => {
+    if (!url.trim()) return 'https://example.com';
+    
+    // For authenticated users with analytics enabled and saved QR code
+    if (user && enableAnalytics && currentQRCode?.short_url) {
+      console.log('Using short URL:', currentQRCode.short_url);
+      return currentQRCode.short_url;
+    }
+    
+    // For all other cases (non-authenticated users or not saved yet), use direct URL
+    const directUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+    console.log('Using direct URL:', directUrl);
+    return directUrl;
+  };
+
+  const saveQRCode = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save and track QR codes",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!url.trim()) {
+      toast({
+        title: "URL Required",
+        description: "Please enter a URL to save",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!title.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title for your QR code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const qrData = {
+        title: title.trim(),
+        original_url: url.trim(),
+        qr_settings: {
+          qrColor,
+          bgColor,
+          dotsType,
+          cornersSquareType,
+          cornersDotType,
+          borderStyle,
+          borderColor,
+          borderWidth,
+          logo,
+        },
+      };
+
+      const savedQRCode = await qrService.createQRCode(qrData);
+      setCurrentQRCode(savedQRCode);
+      
+      toast({
+        title: "QR Code Saved!",
+        description: `"${title}" has been saved with analytics tracking enabled`,
+      });
+    } catch (error) {
+      console.error('Save error:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save QR code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const downloadQR = () => {
-    if (!qrRef.current) return;
+    if (!qrCodeRef.current) return;
     
     try {
-      qrRef.current.download('png', 'qr-code.png');
+      const filename = title.trim() ? title.replace(/[^a-z0-9]/gi, '_') : 'qr-code';
+      qrCodeRef.current.download({ name: filename, extension: 'png' });
     } catch (error) {
       toast({
         title: "Download Failed",
         description: "Failed to download QR code",
         variant: "destructive",
       });
+    }
+  };
+
+  const resetForm = () => {
+    setCurrentQRCode(null);
+    setTitle('');
+    setUrl('');
+    setLogo(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -118,133 +290,239 @@ const QRGenerator = () => {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Input Section */}
         <Card className="brutal-card p-8 space-y-6">
-          <div className="space-y-3">
-            <Label htmlFor="url" className="text-lg font-bold uppercase">
-              Website URL
-            </Label>
-            <Input
-              id="url"
-              placeholder="https://yoursite.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="brutal-input h-14 text-lg"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-lg font-bold uppercase">Company Logo</Label>
-            <div className="space-y-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className="hidden"
-              />
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  UPLOAD LOGO
-                </Button>
-                {logo && (
-                  <Button
-                    onClick={clearLogo}
-                    variant="destructive"
-                  >
-                    CLEAR
-                  </Button>
-                )}
-              </div>
-              {logo && (
-                <div className="p-4 border-4 border-border bg-secondary">
-                  <img src={logo} alt="Logo preview" className="h-16 mx-auto" />
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="basic">Basic</TabsTrigger>
+              <TabsTrigger value="shapes">Shapes</TabsTrigger>
+              <TabsTrigger value="borders">Borders</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="basic" className="space-y-6">
+              {user && (
+                <div className="space-y-3">
+                  <Label htmlFor="title" className="text-lg font-bold uppercase">
+                    QR Code Title
+                  </Label>
+                  <Input
+                    id="title"
+                    placeholder="My Website QR Code"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="brutal-input h-14 text-lg"
+                  />
                 </div>
               )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <Label htmlFor="qr-color" className="text-lg font-bold uppercase">
-                QR Color
-              </Label>
-              <div className="flex gap-2 items-center">
-                <input
-                  id="qr-color"
-                  type="color"
-                  value={qrColor}
-                  onChange={(e) => setQrColor(e.target.value)}
-                  className="brutal-input h-14 w-20 cursor-pointer"
-                />
+              
+              <div className="space-y-3">
+                <Label htmlFor="url" className="text-lg font-bold uppercase">
+                  Website URL
+                </Label>
                 <Input
-                  value={qrColor}
-                  onChange={(e) => setQrColor(e.target.value)}
-                  className="brutal-input h-14"
+                  id="url"
+                  placeholder="Enter: www.example.com or https://example.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="brutal-input h-14 text-lg"
                 />
+                {url && !url.match(/^https?:\/\//) && (
+                  <div className="p-2 bg-blue-50 border-2 border-blue-200 rounded">
+                    <p className="text-sm text-blue-700">
+                      ℹ️ Will be saved as: <strong>https://{url}</strong>
+                    </p>
+                  </div>
+                )}
+                {user && enableAnalytics && currentQRCode && (
+                  <div className="p-3 bg-primary/10 border-2 border-primary/20 rounded">
+                    <p className="text-sm font-bold text-primary mb-1">🎯 Analytics Enabled</p>
+                    <p className="text-xs text-muted-foreground break-all">
+                      Tracking URL: {currentQRCode.short_url}
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="space-y-3">
-              <Label htmlFor="bg-color" className="text-lg font-bold uppercase">
-                Background
-              </Label>
-              <div className="flex gap-2 items-center">
-                <input
-                  id="bg-color"
-                  type="color"
-                  value={bgColor}
-                  onChange={(e) => setBgColor(e.target.value)}
-                  className="brutal-input h-14 w-20 cursor-pointer"
-                />
-                <Input
-                  value={bgColor}
-                  onChange={(e) => setBgColor(e.target.value)}
-                  className="brutal-input h-14"
-                />
-              </div>
-            </div>
-          </div>
 
-          {!isColorsValid && (
-            <div className="flex items-center gap-2 text-destructive bg-destructive/10 p-3 border-4 border-destructive/20">
-              <AlertTriangle className="w-4 h-4" />
-              <span className="text-sm font-bold">Colors too similar - QR won't scan!</span>
-            </div>
-          )}
-          
-          <Button
-            onClick={() => validateColors()}
-            className="w-full"
-            size="lg"
-            disabled={!url.trim() || !isColorsValid}
-          >
-            <Palette className="w-5 h-5 mr-2" />
-            GENERATE QR CODE
-          </Button>
+              <div className="space-y-3">
+                <Label className="text-lg font-bold uppercase">Company Logo</Label>
+                <div className="space-y-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      UPLOAD LOGO
+                    </Button>
+                    {logo && (
+                      <Button
+                        onClick={clearLogo}
+                        variant="destructive"
+                      >
+                        CLEAR
+                      </Button>
+                    )}
+                  </div>
+                  {logo && (
+                    <div className="p-4 border-4 border-border bg-secondary">
+                      <img src={logo} alt="Logo preview" className="h-16 mx-auto" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label htmlFor="qr-color" className="text-lg font-bold uppercase">
+                    QR Color
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      id="qr-color"
+                      type="color"
+                      value={qrColor}
+                      onChange={(e) => setQrColor(e.target.value)}
+                      className="brutal-input h-14 w-20 cursor-pointer"
+                    />
+                    <Input
+                      value={qrColor}
+                      onChange={(e) => setQrColor(e.target.value)}
+                      className="brutal-input h-14"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="bg-color" className="text-lg font-bold uppercase">
+                    Background
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      id="bg-color"
+                      type="color"
+                      value={bgColor}
+                      onChange={(e) => setBgColor(e.target.value)}
+                      className="brutal-input h-14 w-20 cursor-pointer"
+                    />
+                    <Input
+                      value={bgColor}
+                      onChange={(e) => setBgColor(e.target.value)}
+                      className="brutal-input h-14"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {user && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-lg font-bold uppercase">Enable Analytics</Label>
+                    <Switch
+                      checked={enableAnalytics}
+                      onCheckedChange={setEnableAnalytics}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Track scans, locations, devices, and get detailed insights
+                  </p>
+                </div>
+              )}
+
+              {!isColorsValid && (
+                <div className="flex items-center gap-2 text-destructive bg-destructive/10 p-3 border-4 border-destructive/20">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="text-sm font-bold">Colors too similar - QR won't scan!</span>
+                </div>
+              )}
+
+              {user && (
+                <div className="flex gap-3">
+                  <Button
+                    onClick={saveQRCode}
+                    disabled={!url.trim() || !title.trim() || !isColorsValid || isSaving}
+                    className="flex-1"
+                  >
+                    {isSaving ? (
+                      "Saving..."
+                    ) : (
+                      <>
+                        <Save className="w-5 h-5 mr-2" />
+                        {currentQRCode ? 'Update QR Code' : 'Save QR Code'}
+                      </>
+                    )}
+                  </Button>
+                  {currentQRCode && (
+                    <Button onClick={resetForm} variant="outline">
+                      Create New
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {!user && (
+                <AuthModal>
+                  <Card className="brutal-card p-4 cursor-pointer hover:bg-secondary/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="w-6 h-6 text-primary" />
+                      <div>
+                        <p className="font-bold">Want Analytics? Sign Up Now!</p>
+                        <p className="text-sm text-muted-foreground">
+                          Track scans, save QR codes, and get insights
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                </AuthModal>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="shapes">
+              <QRShapeSelector
+                dotsType={dotsType}
+                cornersSquareType={cornersSquareType}
+                cornersDotType={cornersDotType}
+                onDotsTypeChange={setDotsType}
+                onCornersSquareTypeChange={setCornersSquareType}
+                onCornersDotTypeChange={setCornersDotType}
+              />
+            </TabsContent>
+            
+            <TabsContent value="borders">
+              <QRBorderSelector
+                borderStyle={borderStyle}
+                borderColor={borderColor}
+                borderWidth={borderWidth}
+                onBorderStyleChange={setBorderStyle}
+                onBorderColorChange={setBorderColor}
+                onBorderWidthChange={setBorderWidth}
+              />
+            </TabsContent>
+          </Tabs>
         </Card>
 
         {/* Output Section */}
         <div className="space-y-6">
           <Card className="brutal-card p-8">
-            <div className="aspect-square bg-secondary border-4 border-border flex items-center justify-center">
+            <div 
+              className={`aspect-square bg-secondary flex items-center justify-center ${
+                borderStyle !== 'none' 
+                  ? `border-${borderWidth} border-${borderStyle === 'double' ? 'double' : borderStyle === 'dashed' ? 'dashed' : 'solid'} ${
+                      borderStyle === 'rounded' ? 'rounded-lg' : ''
+                    }`
+                  : 'border-4 border-border'
+              }`}
+              style={{
+                borderColor: borderStyle !== 'none' ? borderColor : undefined,
+                borderWidth: borderStyle !== 'none' ? `${borderWidth}px` : undefined,
+              }}
+            >
               {url.trim() && isColorsValid ? (
-                <QRCode
-                  ref={qrRef}
-                  value={url}
-                  size={350}
-                  fgColor={qrColor}
-                  bgColor={bgColor}
-                  logoImage={logo || undefined}
-                  logoWidth={70}
-                  logoHeight={70}
-                  logoOpacity={1}
-                  removeQrCodeBehindLogo={true}
-                  qrStyle="dots"
-                  eyeRadius={8}
-                />
+                <div ref={qrRef} className="flex items-center justify-center" />
               ) : (
                 <div className="text-center text-muted-foreground">
                   <Palette className="w-12 h-12 mx-auto mb-4" />
