@@ -55,15 +55,27 @@ const Redirect = () => {
           return;
         }
 
+        // Get time-aware redirect URL (will handle pro user check and time rules)
+        const timeAwareUrl = await qrService.getTimeAwareRedirectUrl(shortCode);
+        
+        console.log('Time-aware URL result:', timeAwareUrl);
+        
+        if (!timeAwareUrl) {
+          console.log('Time-aware redirect failed, falling back to original URL');
+          setError('Failed to process redirect');
+          setLoading(false);
+          return;
+        }
+
         // Collect analytics data
         const userAgent = navigator.userAgent;
         const deviceType = qrService.detectDeviceType(userAgent);
         const browser = qrService.detectBrowser(userAgent);
         
         // Ensure URL has proper protocol for redirect
-        const finalUrl = qrCode.original_url.match(/^https?:\/\//) 
-          ? qrCode.original_url 
-          : `https://${qrCode.original_url}`;
+        const finalUrl = timeAwareUrl.match(/^https?:\/\//) 
+          ? timeAwareUrl 
+          : `https://${timeAwareUrl}`;
         
         console.log('Final redirect URL:', finalUrl);
         setRedirectUrl(finalUrl);

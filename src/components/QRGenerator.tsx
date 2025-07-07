@@ -7,10 +7,13 @@ import { Card } from '@/components/ui/card';
 import { Download, Upload, Palette, AlertTriangle, Save, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { qrService } from '@/services/qrService';
+import { qrService, QRCodeData } from '@/services/qrService';
 import QRShapeSelector from './QRShapeSelector';
 import QRBorderSelector from './QRBorderSelector';
 import AuthModal from './AuthModal';
+import TimeRuleManager, { TimeRule } from './TimeRuleManager';
+import ProFeatureGuard from './ProFeatureGuard';
+import SaveButtons from './SaveButtons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 
@@ -28,7 +31,8 @@ const QRGenerator = () => {
   const [borderWidth, setBorderWidth] = useState(4);
   const [enableAnalytics, setEnableAnalytics] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentQRCode, setCurrentQRCode] = useState<any>(null);
+  const [currentQRCode, setCurrentQRCode] = useState<QRCodeData | null>(null);
+  const [timeRules, setTimeRules] = useState<TimeRule[]>([]);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCodeRef = useRef<QRCodeStyling | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -217,6 +221,7 @@ const QRGenerator = () => {
           borderColor,
           borderWidth,
           logo,
+          timeRules,
         },
       };
 
@@ -259,6 +264,7 @@ const QRGenerator = () => {
     setTitle('');
     setUrl('');
     setLogo(null);
+    setTimeRules([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -276,25 +282,40 @@ const QRGenerator = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-6xl font-black uppercase tracking-tight">
-          QR CODE
-          <br />
-          <span className="text-primary">GENERATOR</span>
-        </h1>
-        <p className="text-xl font-bold text-muted-foreground">
-          CREATE BRUTAL QR CODES WITH YOUR LOGO
-        </p>
+      <div className="text-center space-y-6">
+        {/* Logo */}
+        <div className="flex justify-center">
+          <div className="relative group">
+            <img 
+              src="/img/qr.png" 
+              alt="QR Blast Logo" 
+              className="w-24 h-24 transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
+            />
+            <div className="absolute -inset-2 bg-primary/20 rounded-xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <h1 className="text-6xl font-black uppercase tracking-tight">
+            QR CODE
+            <br />
+            <span className="text-primary">GENERATOR</span>
+          </h1>
+          <p className="text-xl font-bold text-muted-foreground">
+            CREATE BRUTAL QR CODES WITH YOUR LOGO
+          </p>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Input Section */}
         <Card className="brutal-card p-8 space-y-6">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="basic">Basic</TabsTrigger>
               <TabsTrigger value="shapes">Shapes</TabsTrigger>
               <TabsTrigger value="borders">Borders</TabsTrigger>
+              <TabsTrigger value="time">Time Rules</TabsTrigger>
             </TabsList>
             
             <TabsContent value="basic" className="space-y-6">
@@ -440,45 +461,6 @@ const QRGenerator = () => {
                 </div>
               )}
 
-              {user && (
-                <div className="flex gap-3">
-                  <Button
-                    onClick={saveQRCode}
-                    disabled={!url.trim() || !title.trim() || !isColorsValid || isSaving}
-                    className="flex-1"
-                  >
-                    {isSaving ? (
-                      "Saving..."
-                    ) : (
-                      <>
-                        <Save className="w-5 h-5 mr-2" />
-                        {currentQRCode ? 'Update QR Code' : 'Save QR Code'}
-                      </>
-                    )}
-                  </Button>
-                  {currentQRCode && (
-                    <Button onClick={resetForm} variant="outline">
-                      Create New
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {!user && (
-                <AuthModal>
-                  <Card className="brutal-card p-4 cursor-pointer hover:bg-secondary/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <BarChart3 className="w-6 h-6 text-primary" />
-                      <div>
-                        <p className="font-bold">Want Analytics? Sign Up Now!</p>
-                        <p className="text-sm text-muted-foreground">
-                          Track scans, save QR codes, and get insights
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                </AuthModal>
-              )}
             </TabsContent>
             
             <TabsContent value="shapes">
@@ -502,7 +484,28 @@ const QRGenerator = () => {
                 onBorderWidthChange={setBorderWidth}
               />
             </TabsContent>
+            
+            <TabsContent value="time">
+              <ProFeatureGuard>
+                <TimeRuleManager
+                  rules={timeRules}
+                  onRulesChange={setTimeRules}
+                  defaultUrl={url || 'https://example.com'}
+                />
+              </ProFeatureGuard>
+            </TabsContent>
           </Tabs>
+          
+          {/* Save buttons outside tabs - always visible */}
+          <SaveButtons
+            onSave={saveQRCode}
+            onReset={resetForm}
+            isSaving={isSaving}
+            isValid={isColorsValid}
+            currentQRCode={currentQRCode}
+            url={url}
+            title={title}
+          />
         </Card>
 
         {/* Output Section */}

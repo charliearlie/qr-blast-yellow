@@ -1,5 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export interface TimeRule {
+  id: string;
+  startTime: string;
+  endTime: string;
+  url: string;
+  label?: string;
+}
+
 export interface QRCodeData {
   id?: string;
   title: string;
@@ -16,6 +24,7 @@ export interface QRCodeData {
     borderColor: string;
     borderWidth: number;
     logo?: string;
+    timeRules?: TimeRule[];
   };
   scan_count?: number;
   created_at?: string;
@@ -167,6 +176,21 @@ class QRService {
     return qrCode;
   }
 
+  async getTimeAwareRedirectUrl(shortCode: string): Promise<string | null> {
+    console.log('Getting time-aware redirect URL for short code:', shortCode);
+    
+    const { data: redirectUrl, error } = await supabase
+      .rpc('get_redirect_url_for_short_code', { p_short_code: shortCode });
+
+    if (error) {
+      console.error('Time-aware redirect error:', error);
+      return null;
+    }
+
+    console.log('Time-aware redirect URL:', redirectUrl);
+    return redirectUrl;
+  }
+
   async trackQRCodeScan(qrCodeId: string, analyticsData: Partial<QRAnalytics>): Promise<void> {
     // Record the scan
     const { error: analyticsError } = await supabase
@@ -225,10 +249,11 @@ class QRService {
   detectDeviceType(userAgent: string): string {
     const ua = userAgent.toLowerCase();
     
-    if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
-      return 'Mobile';
-    } else if (ua.includes('tablet') || ua.includes('ipad')) {
+    // Check for tablet first to avoid android tablets being detected as mobile
+    if (ua.includes('tablet') || ua.includes('ipad')) {
       return 'Tablet';
+    } else if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+      return 'Mobile';
     } else {
       return 'Desktop';
     }
@@ -238,11 +263,12 @@ class QRService {
   detectBrowser(userAgent: string): string {
     const ua = userAgent.toLowerCase();
     
+    // Check for Edge first since it contains "chrome" in its user agent
+    if (ua.includes('edge') || ua.includes('edg/')) return 'Edge';
+    if (ua.includes('opera') || ua.includes('opr/')) return 'Opera';
     if (ua.includes('chrome')) return 'Chrome';
     if (ua.includes('firefox')) return 'Firefox';
     if (ua.includes('safari')) return 'Safari';
-    if (ua.includes('edge')) return 'Edge';
-    if (ua.includes('opera')) return 'Opera';
     
     return 'Other';
   }

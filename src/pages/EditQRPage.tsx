@@ -11,6 +11,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { qrService, QRCodeData } from '@/services/qrService';
 import QRShapeSelector from '@/components/QRShapeSelector';
 import QRBorderSelector from '@/components/QRBorderSelector';
+import TimeRuleManager, { TimeRule } from '@/components/TimeRuleManager';
+import ProFeatureGuard from '@/components/ProFeatureGuard';
+import UpdateButtons from '@/components/UpdateButtons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const EditQRPage = () => {
@@ -29,6 +32,7 @@ const EditQRPage = () => {
   const [borderStyle, setBorderStyle] = useState('none');
   const [borderColor, setBorderColor] = useState('#000000');
   const [borderWidth, setBorderWidth] = useState(4);
+  const [timeRules, setTimeRules] = useState<TimeRule[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCodeRef = useRef<QRCodeStyling | null>(null);
@@ -86,6 +90,7 @@ const EditQRPage = () => {
         setBorderColor(settings.borderColor || '#000000');
         setBorderWidth(settings.borderWidth || 4);
         setLogo(settings.logo || null);
+        setTimeRules(settings.timeRules || []);
       }
     } catch (error) {
       toast({
@@ -234,6 +239,7 @@ const EditQRPage = () => {
           borderColor,
           borderWidth,
           logo,
+          timeRules,
         },
       };
 
@@ -381,10 +387,11 @@ const EditQRPage = () => {
           {/* Input Section */}
           <Card className="brutal-card p-8 space-y-6">
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="basic">Basic</TabsTrigger>
                 <TabsTrigger value="shapes">Shapes</TabsTrigger>
                 <TabsTrigger value="borders">Borders</TabsTrigger>
+                <TabsTrigger value="time">Time Rules</TabsTrigger>
               </TabsList>
               
               <TabsContent value="basic" className="space-y-6">
@@ -510,22 +517,6 @@ const EditQRPage = () => {
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  <Button
-                    onClick={updateQRCode}
-                    disabled={!url.trim() || !title.trim() || !isColorsValid || isSaving}
-                    className="flex-1 brutal-button"
-                  >
-                    {isSaving ? (
-                      "Updating..."
-                    ) : (
-                      <>
-                        <Save className="w-5 h-5 mr-2" />
-                        Update QR Code
-                      </>
-                    )}
-                  </Button>
-                </div>
               </TabsContent>
               
               <TabsContent value="shapes">
@@ -549,7 +540,26 @@ const EditQRPage = () => {
                   onBorderWidthChange={setBorderWidth}
                 />
               </TabsContent>
+              
+              <TabsContent value="time">
+                <ProFeatureGuard>
+                  <TimeRuleManager
+                    rules={timeRules}
+                    onRulesChange={setTimeRules}
+                    defaultUrl={url || qrCodeData?.original_url || 'https://example.com'}
+                  />
+                </ProFeatureGuard>
+              </TabsContent>
             </Tabs>
+            
+            {/* Update button outside tabs - always visible */}
+            <UpdateButtons
+              onUpdate={updateQRCode}
+              isSaving={isSaving}
+              isValid={isColorsValid}
+              url={url}
+              title={title}
+            />
           </Card>
 
           {/* Output Section */}
