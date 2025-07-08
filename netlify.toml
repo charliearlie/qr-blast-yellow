@@ -1,0 +1,41 @@
+[build]
+  command = "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm run generate:sitemap && vite build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18.19.0"
+  NPM_FLAGS = "--legacy-peer-deps"
+  NODE_ENV = "production"
+
+# Cache node_modules for faster builds
+[build.processing.js]
+  bundle = false
+  minify = true
+
+# Blog-specific redirects
+[[redirects]]
+  from = "/blog/*"
+  to = "/index.html"
+  status = 200
+
+# API redirects  
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Client-side routing fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co;"

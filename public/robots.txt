@@ -5,6 +5,8 @@ Allow: /login
 Allow: /about
 Allow: /privacy
 Allow: /terms
+Allow: /blog
+Allow: /blog/
 
 # Disallow private/dynamic routes
 Disallow: /dashboard

@@ -15,8 +15,46 @@ import EditQRPage from "./pages/EditQRPage";
 import LoginPage from "./pages/LoginPage";
 import Redirect from "./pages/Redirect";
 import NotFoundPage from "./pages/NotFoundPage";
+import BlogIndexPage from "./pages/BlogIndexPage";
+
+import React from 'react';
+import { useParams } from 'react-router-dom';
+
+// Dynamic import for blog posts
+const blogPosts = import.meta.glob('/src/content/blog/*.mdx');
 
 const queryClient = new QueryClient();
+
+// Blog post route component
+const BlogPostRoute = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const [BlogPost, setBlogPost] = React.useState<React.ComponentType | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (slug) {
+      const postPath = `/src/content/blog/${slug}.mdx`;
+      if (blogPosts[postPath]) {
+        blogPosts[postPath]().then((module: { default: React.ComponentType }) => {
+          setBlogPost(() => module.default);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [slug]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!BlogPost) {
+    return <NotFoundPage />;
+  }
+
+  return <BlogPost />;
+};
 
 const App = () => (
   <HelmetProvider>
@@ -34,6 +72,10 @@ const App = () => (
               <Route path="/qr/:id" element={<Layout><QRDetailPage /></Layout>} />
               <Route path="/analytics/:id" element={<Layout><AnalyticsPage /></Layout>} />
               <Route path="/edit/:id" element={<Layout><EditQRPage /></Layout>} />
+              
+              {/* Blog Routes (no layout - they have their own) */}
+              <Route path="/blog" element={<BlogIndexPage />} />
+              <Route path="/blog/:slug" element={<BlogPostRoute />} />
               
               {/* Standalone Routes (no layout) */}
               <Route path="/login" element={<LoginPage />} />
