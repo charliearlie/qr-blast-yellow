@@ -39,7 +39,7 @@ export function BrandingManager({
     async function checkProStatus() {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      const isProUser = user?.user_metadata?.subscription_tier === 'pro';
+      const isProUser = user?.user_metadata?.plan === 'pro';
       setIsPro(isProUser);
       setLoading(false);
     }

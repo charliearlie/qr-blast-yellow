@@ -90,9 +90,9 @@ vi.mock('../TimeRuleManager', () => ({
   ),
 }));
 
-vi.mock('../ProFeatureGuard', () => ({
+vi.mock('../LoginWall', () => ({
   default: ({ children, feature }: any) => (
-    <div data-testid="pro-feature-guard" data-feature={feature}>
+    <div data-testid="login-wall" data-feature={feature}>
       {children}
     </div>
   ),
@@ -304,7 +304,7 @@ describe('QRGenerator', () => {
       await user.click(screen.getByText('Time'));
       
       expect(screen.getByTestId('time-rule-manager')).toBeInTheDocument();
-      expect(screen.getByTestId('pro-feature-guard')).toBeInTheDocument();
+      expect(screen.getByTestId('login-wall')).toBeInTheDocument();
     });
 
     it('should show current URL as default in time rules', async () => {
@@ -342,7 +342,7 @@ describe('QRGenerator', () => {
       await user.click(screen.getByText('Geo'));
       
       expect(screen.getByTestId('geo-rule-manager')).toBeInTheDocument();
-      expect(screen.getByTestId('pro-feature-guard')).toBeInTheDocument();
+      expect(screen.getByTestId('login-wall')).toBeInTheDocument();
     });
 
     it('should show current URL as default in geo rules', async () => {
@@ -506,14 +506,14 @@ describe('QRGenerator', () => {
       expect(screen.getByText('Default URL: https://example.com')).toBeInTheDocument();
     });
 
-    it('should show ProFeatureGuard for time rules', async () => {
+    it('should show LoginWall for time rules', async () => {
       const user = userEvent.setup();
       render(<QRGenerator />);
       
       await user.click(screen.getByText('Time'));
       
-      const proGuard = screen.getByTestId('pro-feature-guard');
-      expect(proGuard).toBeInTheDocument();
+      const loginWall = screen.getByTestId('login-wall');
+      expect(loginWall).toBeInTheDocument();
     });
   });
 

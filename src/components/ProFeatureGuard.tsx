@@ -12,12 +12,9 @@ const ProFeatureGuard = ({ children }: ProFeatureGuardProps) => {
   const { user } = useAuth();
   
   // Check for the 'pro' plan in user metadata.
-  // For now, we'll assume no one is 'pro' unless we manually set it in Supabase.
   const isPro = user?.user_metadata?.plan === 'pro';
 
-  // TEMPORARY: Force pro access for testing
-  // TODO: Remove this line when user metadata refresh is working
-  if (true || isPro) {
+  if (isPro) {
     return <>{children}</>;
   }
 

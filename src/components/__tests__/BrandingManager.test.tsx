@@ -65,7 +65,11 @@ vi.mock('@/components/ui/radio-group', () => ({
 }));
 
 vi.mock('@/components/ProFeatureGuard', () => ({
-  default: ({ children }: any) => children,
+  default: ({ children }: any) => (
+    <div data-testid="pro-feature-guard">
+      {children}
+    </div>
+  ),
 }));
 
 describe('BrandingManager', () => {
@@ -96,13 +100,13 @@ describe('BrandingManager', () => {
     beforeEach(() => {
       (useUser as any).mockReturnValue({
         id: 'user-123',
-        user_metadata: { subscription_tier: 'free' },
+        user_metadata: { plan: 'free' },
       });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: {
           user: {
             id: 'user-123',
-            user_metadata: { subscription_tier: 'free' },
+            user_metadata: { plan: 'free' },
           },
         },
         error: null,
@@ -122,11 +126,13 @@ describe('BrandingManager', () => {
       expect(radioGroup).toHaveAttribute('disabled');
     });
 
-    it('should show upgrade prompt for free users', () => {
+    it('should show upgrade prompt for free users', async () => {
       render(<BrandingManager {...defaultProps} />);
       
-      expect(screen.getByText(/Upgrade to Pro/i)).toBeInTheDocument();
-      expect(screen.getByText(/Add professional branding/i)).toBeInTheDocument();
+      // Wait for the component to load and check pro status
+      await waitFor(() => {
+        expect(screen.getByText(/add professional branding that displays before redirecting visitors/i)).toBeInTheDocument();
+      });
     });
   });
 
@@ -134,13 +140,13 @@ describe('BrandingManager', () => {
     beforeEach(() => {
       (useUser as any).mockReturnValue({
         id: 'user-123',
-        user_metadata: { subscription_tier: 'pro' },
+        user_metadata: { plan: 'pro' },
       });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: {
           user: {
             id: 'user-123',
-            user_metadata: { subscription_tier: 'pro' },
+            user_metadata: { plan: 'pro' },
           },
         },
         error: null,
@@ -247,13 +253,13 @@ describe('BrandingManager', () => {
     beforeEach(() => {
       (useUser as any).mockReturnValue({
         id: 'user-123',
-        user_metadata: { subscription_tier: 'pro' },
+        user_metadata: { plan: 'pro' },
       });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: {
           user: {
             id: 'user-123',
-            user_metadata: { subscription_tier: 'pro' },
+            user_metadata: { plan: 'pro' },
           },
         },
         error: null,
