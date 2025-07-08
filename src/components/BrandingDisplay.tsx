@@ -41,10 +41,10 @@ export function BrandingDisplay({ style, customText, duration, onComplete }: Bra
               animate={{ scale: 1 }}
               className="text-4xl font-bold text-primary"
             >
-              QR Blast
+              Blast QR
             </motion.div>
             <p className="text-sm text-muted-foreground">
-              Powered by QR Blast
+              Powered by Blast QR
             </p>
           </>
         )}
@@ -56,7 +56,7 @@ export function BrandingDisplay({ style, customText, duration, onComplete }: Bra
               animate={{ scale: 1 }}
               className="text-5xl font-bold text-primary"
             >
-              QR Blast
+              Blast QR
             </motion.div>
             <p className="text-xl text-muted-foreground">
               Smart QR Codes for Modern Business
@@ -87,7 +87,7 @@ export function BrandingDisplay({ style, customText, duration, onComplete }: Bra
               {customText || 'Welcome'}
             </motion.p>
             <p className="text-sm text-muted-foreground mt-8">
-              Powered by QR Blast
+              Powered by Blast QR
             </p>
             {timeLeft > 0 && (
               <p className="text-xs text-muted-foreground">

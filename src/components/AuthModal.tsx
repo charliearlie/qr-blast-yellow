@@ -146,7 +146,7 @@ const AuthModal = ({ children, onSuccess }: AuthModalProps) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold uppercase text-center">
-            Join QR Blast
+            Join Blast QR
           </DialogTitle>
         </DialogHeader>
 

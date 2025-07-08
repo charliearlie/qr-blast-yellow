@@ -13,7 +13,7 @@ export interface SEOProps {
 }
 
 const defaultMeta = {
-  title: 'QR Blast - Free QR Code Generator with Analytics & Security',
+  title: 'Blast QR - Free QR Code Generator with Analytics & Security',
   description: 'Create professional QR codes with built-in analytics, custom designs, and security scanning. Track scans, locations, and user engagement in real-time.',
   keywords: 'QR code generator, free QR codes, QR analytics, custom QR codes, QR security, QR tracking',
   ogImage: '/img/og-image.png',
@@ -32,7 +32,7 @@ export const SEO = ({
   structuredData,
   noindex = false,
 }: SEOProps) => {
-  const fullTitle = title ? `${title} | QR Blast` : defaultMeta.title;
+  const fullTitle = title ? `${title} | Blast QR` : defaultMeta.title;
   const metaDescription = description || defaultMeta.description;
   const metaKeywords = keywords || defaultMeta.keywords;
   const metaImage = ogImage || defaultMeta.ogImage;
@@ -55,7 +55,7 @@ export const SEO = ({
       <meta property="og:type" content={ogType} />
       <meta property="og:image" content={metaImage} />
       <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:site_name" content="QR Blast" />
+      <meta property="og:site_name" content="Blast QR" />
       
       {/* Twitter Cards */}
       <meta name="twitter:card" content={twitterCard} />

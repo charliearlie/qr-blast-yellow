@@ -390,31 +390,6 @@ const QRGenerator = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-6">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <div className="relative group">
-            <img 
-              src="/img/qr.png" 
-              alt="QR Blast Logo" 
-              className="w-24 h-24 transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
-            />
-            <div className="absolute -inset-2 bg-primary/20 rounded-xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
-          </div>
-        </div>
-        
-        <div className="space-y-4">
-          <h1 className="text-6xl font-black uppercase tracking-tight">
-            QR CODE
-            <br />
-            <span className="text-primary">GENERATOR</span>
-          </h1>
-          <p className="text-xl font-bold text-muted-foreground">
-            CREATE BRUTAL QR CODES WITH YOUR LOGO
-          </p>
-        </div>
-      </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Input Section */}

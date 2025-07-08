@@ -102,7 +102,7 @@ export function BrandingManager({
                 <Label htmlFor="minimal" className="cursor-pointer">
                   Minimal
                   <span className="block text-sm text-muted-foreground">
-                    Small logo and "Powered by QR Blast"
+                    Small logo and "Powered by Blast QR"
                   </span>
                 </Label>
               </div>
@@ -120,7 +120,7 @@ export function BrandingManager({
                 <Label htmlFor="custom" className="cursor-pointer">
                   Custom
                   <span className="block text-sm text-muted-foreground">
-                    Your custom message with QR Blast attribution
+                    Your custom message with Blast QR attribution
                   </span>
                 </Label>
               </div>
@@ -139,7 +139,7 @@ export function BrandingManager({
                 maxLength={100}
               />
               <p className="text-sm text-muted-foreground">
-                This will be displayed with "Powered by QR Blast" attribution
+                This will be displayed with "Powered by Blast QR" attribution
               </p>
             </div>
           )}
@@ -151,13 +151,13 @@ export function BrandingManager({
             <div className="bg-background rounded-lg p-8 text-center space-y-4">
               {brandingStyle === 'minimal' && (
                 <>
-                  <div className="text-2xl font-bold">QR Blast</div>
-                  <p className="text-sm text-muted-foreground">Powered by QR Blast</p>
+                  <div className="text-2xl font-bold">Blast QR</div>
+                  <p className="text-sm text-muted-foreground">Powered by Blast QR</p>
                 </>
               )}
               {brandingStyle === 'full' && (
                 <>
-                  <div className="text-3xl font-bold">QR Blast</div>
+                  <div className="text-3xl font-bold">Blast QR</div>
                   <p className="text-lg text-muted-foreground">
                     Smart QR Codes for Modern Business
                   </p>
@@ -169,7 +169,7 @@ export function BrandingManager({
               {brandingStyle === 'custom' && (
                 <>
                   <p className="text-xl">{customBrandingText || 'Your custom message'}</p>
-                  <p className="text-sm text-muted-foreground mt-4">Powered by QR Blast</p>
+                  <p className="text-sm text-muted-foreground mt-4">Powered by Blast QR</p>
                 </>
               )}
             </div>

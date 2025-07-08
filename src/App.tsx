@@ -7,6 +7,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from "@/hooks/useAuth";
 import Layout from "@/components/Layout";
 import HomePage from "./pages/HomePage";
+import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import QRDetailPage from "./pages/QRDetailPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
@@ -27,7 +28,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               {/* Routes with Layout */}
-              <Route path="/" element={<Layout><HomePage /></Layout>} />
+              <Route path="/" element={<Layout><LandingPage /></Layout>} />
               <Route path="/generate" element={<Layout><HomePage /></Layout>} />
               <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
               <Route path="/qr/:id" element={<Layout><QRDetailPage /></Layout>} />
