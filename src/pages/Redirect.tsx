@@ -5,17 +5,29 @@ import { securityService } from '@/services/securityService';
 import { Card } from '@/components/ui/card';
 import { Shield, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock, Globe, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BrandingDisplay } from '@/components/BrandingDisplay';
+import { AnimatePresence } from 'framer-motion';
 
 const Redirect = () => {
   const { shortCode } = useParams<{ shortCode: string }>();
   const [isSecurityCheck, setIsSecurityCheck] = useState(true);
   const [securityPhase, setSecurityPhase] = useState<'checking' | 'complete' | 'blocked'>('checking');
   const [showTransition, setShowTransition] = useState(false);
+  const [showBranding, setShowBranding] = useState(false);
+  const [brandingComplete, setBrandingComplete] = useState(false);
   
   const { data: redirectData, isLoading, error } = useRedirect(shortCode || '');
 
   useEffect(() => {
-    if (!redirectData || !redirectData.securityResult) return;
+    if (!redirectData) return;
+
+    // Check if branding should be shown
+    if (redirectData.qrCode?.branding_enabled && !brandingComplete) {
+      setShowBranding(true);
+      return;
+    }
+
+    if (!redirectData.securityResult) return;
 
     // Show security results with transition
     setTimeout(() => {
@@ -36,7 +48,12 @@ const Redirect = () => {
         console.log('🚨 Malicious URL blocked:', redirectData.finalUrl);
       }
     }, 1500); // Reduced from 2000ms to 1500ms
-  }, [redirectData]);
+  }, [redirectData, brandingComplete]);
+
+  const handleBrandingComplete = () => {
+    setShowBranding(false);
+    setBrandingComplete(true);
+  };
 
   const handleManualRedirect = () => {
     if (redirectData?.finalUrl) {
@@ -225,9 +242,22 @@ const Redirect = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="brutal-card p-8 max-w-md w-full mx-4">
-        <div className="text-center space-y-6">
+    <>
+      <AnimatePresence mode="wait">
+        {showBranding && redirectData?.qrCode && (
+          <BrandingDisplay
+            style={redirectData.qrCode.branding_style || 'minimal'}
+            customText={redirectData.qrCode.custom_branding_text}
+            duration={redirectData.qrCode.branding_duration || 3}
+            onComplete={handleBrandingComplete}
+          />
+        )}
+      </AnimatePresence>
+      
+      {!showBranding && (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Card className="brutal-card p-8 max-w-md w-full mx-4">
+            <div className="text-center space-y-6">
           {renderSecurityCheck()}
 
           {renderSecurityDetails()}
@@ -277,9 +307,11 @@ const Redirect = () => {
             </p>
             <p>Real-time destination verification</p>
           </div>
+            </div>
+          </Card>
         </div>
-      </Card>
-    </div>
+      )}
+    </>
   );
 };
 

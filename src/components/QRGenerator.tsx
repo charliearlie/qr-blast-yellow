@@ -8,6 +8,7 @@ import { Download, Upload, Palette, AlertTriangle, Save, BarChart3 } from 'lucid
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { qrService, QRCodeData } from '@/services/qrService';
+import { supabase } from '@/integrations/supabase/client';
 import QRShapeSelector from './QRShapeSelector';
 import QRBorderSelector from './QRBorderSelector';
 import AuthModal from './AuthModal';
@@ -20,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import ScanLimitManager from './ScanLimitManager';
 import TemplateSelector from './TemplateSelector';
 import { templates, QRTemplate } from '@/config/templates';
+import { BrandingManager } from './BrandingManager';
 
 const QRGenerator = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<QRTemplate>(templates.find(t => t.isDefault)!);
@@ -42,6 +44,11 @@ const QRGenerator = () => {
   const [scanLimitEnabled, setScanLimitEnabled] = useState(false);
   const [scanLimit, setScanLimit] = useState<number | null>(100);
   const [expiredUrl, setExpiredUrl] = useState('');
+  const [brandingEnabled, setBrandingEnabled] = useState(false);
+  const [brandingDuration, setBrandingDuration] = useState(3);
+  const [brandingStyle, setBrandingStyle] = useState<'minimal' | 'full' | 'custom'>('minimal');
+  const [customBrandingText, setCustomBrandingText] = useState('');
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCodeRef = useRef<QRCodeStyling | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -263,6 +270,10 @@ const QRGenerator = () => {
         },
         scan_limit: scanLimitEnabled ? scanLimit : null,
         expired_url: scanLimitEnabled ? expiredUrl : null,
+        branding_enabled: brandingEnabled,
+        branding_duration: brandingDuration,
+        branding_style: brandingStyle,
+        custom_branding_text: brandingStyle === 'custom' ? customBrandingText : null,
       };
 
       console.log('Complete qrData object:', JSON.stringify(qrData, null, 2));
@@ -324,6 +335,57 @@ const QRGenerator = () => {
     }
   };
 
+  const handleSuggestBranding = async () => {
+    if (!userInput.trim()) {
+      toast({ title: "Please enter a URL first.", variant: "destructive" });
+      return;
+    }
+
+    setIsSuggesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('url-inspector', {
+        body: { url: userInput.trim() },
+      });
+
+      if (error || data.error) {
+        throw new Error(error?.message || data.error);
+      }
+
+      let updated = false;
+      if (data.faviconUrl) {
+        setLogo(data.faviconUrl);
+        updated = true;
+      }
+      if (data.themeColor) {
+        setQrColor(data.themeColor);
+        updated = true;
+      }
+
+      if (updated) {
+        const logoText = data.faviconUrl ? "logo" : "";
+        const colorText = data.themeColor ? "theme color" : "";
+        
+        let description = "We found ";
+        if (logoText && colorText) {
+          description += `a ${logoText} and ${colorText} for you.`;
+        } else if (logoText) {
+          description += `a ${logoText} for you.`;
+        } else if (colorText) {
+          description += `a ${colorText} for you.`;
+        }
+        
+        toast({ title: "Branding applied!", description });
+      } else {
+        toast({ title: "No branding found.", description: "We couldn't automatically find a logo or theme color." });
+      }
+
+    } catch (err: any) {
+      toast({ title: "Analysis Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const isColorsValid = getColorContrast(qrColor, bgColor) >= 3;
 
   return (
@@ -358,13 +420,14 @@ const QRGenerator = () => {
         {/* Input Section */}
         <Card className="brutal-card p-8 space-y-6 lg:col-span-2">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto p-1 gap-1">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 h-auto p-1 gap-1">
               <TabsTrigger value="basic" className="text-xs px-2 py-2">Basic</TabsTrigger>
               <TabsTrigger value="shapes" className="text-xs px-2 py-2">Shapes</TabsTrigger>
               <TabsTrigger value="borders" className="text-xs px-2 py-2">Borders</TabsTrigger>
               <TabsTrigger value="geo" className="text-xs px-2 py-2">Geo</TabsTrigger>
               <TabsTrigger value="time" className="text-xs px-2 py-2">Time</TabsTrigger>
               <TabsTrigger value="limits" className="text-xs px-2 py-2">Limits</TabsTrigger>
+              <TabsTrigger value="branding" className="text-xs px-2 py-2">Branding</TabsTrigger>
             </TabsList>
             
             <TabsContent value="basic" className="space-y-6">
@@ -453,6 +516,18 @@ const QRGenerator = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="flex justify-between items-center mb-4">
+                <Label className="text-lg font-bold uppercase">Colors & Branding</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSuggestBranding}
+                  disabled={isSuggesting || !userInput.trim()}
+                >
+                  {isSuggesting ? 'Analyzing...' : 'Suggest from URL'}
+                </Button>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -574,6 +649,19 @@ const QRGenerator = () => {
                   onExpiredUrlChange={setExpiredUrl}
                 />
               </ProFeatureGuard>
+            </TabsContent>
+            
+            <TabsContent value="branding">
+              <BrandingManager
+                brandingEnabled={brandingEnabled}
+                setBrandingEnabled={setBrandingEnabled}
+                brandingDuration={brandingDuration}
+                setBrandingDuration={setBrandingDuration}
+                brandingStyle={brandingStyle}
+                setBrandingStyle={setBrandingStyle}
+                customBrandingText={customBrandingText}
+                setCustomBrandingText={setCustomBrandingText}
+              />
             </TabsContent>
           </Tabs>
           

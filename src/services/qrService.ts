@@ -39,6 +39,10 @@ export interface QRCodeData {
   scan_count?: number;
   scan_limit?: number | null;
   expired_url?: string | null;
+  branding_enabled?: boolean;
+  branding_duration?: number;
+  branding_style?: 'minimal' | 'full' | 'custom';
+  custom_branding_text?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -82,7 +86,7 @@ class QRService {
     return url;
   }
 
-  async createQRCode(data: QRCodeData & { scan_limit?: number | null; expired_url?: string | null }): Promise<QRCodeData> {
+  async createQRCode(data: QRCodeData): Promise<QRCodeData> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -112,6 +116,10 @@ class QRService {
       qr_settings: data.qr_settings,
       scan_limit: data.scan_limit || null,
       expired_url: data.expired_url || null,
+      branding_enabled: data.branding_enabled || false,
+      branding_duration: data.branding_duration || 3,
+      branding_style: data.branding_style || 'minimal',
+      custom_branding_text: data.custom_branding_text || null,
     };
 
     const { data: qrCode, error } = await supabase
@@ -128,7 +136,7 @@ class QRService {
     return qrCode;
   }
 
-  async updateQRCode(id: string, data: Partial<QRCodeData> & { scan_limit?: number | null; expired_url?: string | null }): Promise<QRCodeData> {
+  async updateQRCode(id: string, data: Partial<QRCodeData>): Promise<QRCodeData> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -144,6 +152,10 @@ class QRService {
     if (data.qr_settings !== undefined) updateData.qr_settings = data.qr_settings;
     if (data.scan_limit !== undefined) updateData.scan_limit = data.scan_limit;
     if (data.expired_url !== undefined) updateData.expired_url = data.expired_url;
+    if (data.branding_enabled !== undefined) updateData.branding_enabled = data.branding_enabled;
+    if (data.branding_duration !== undefined) updateData.branding_duration = data.branding_duration;
+    if (data.branding_style !== undefined) updateData.branding_style = data.branding_style;
+    if (data.custom_branding_text !== undefined) updateData.custom_branding_text = data.custom_branding_text;
 
     const { data: qrCode, error } = await supabase
       .from('qr_codes')
