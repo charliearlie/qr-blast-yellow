@@ -36,7 +36,9 @@ const BlogPostLayout = ({ frontmatter, children }: BlogPostLayoutProps) => {
       "url": "https://blastqr.com",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://blastqr.com/img/qr-full.png"
+        "url": "https://blastqr.com/img/qr-full.png",
+        "width": 1024,
+        "height": 1024
       }
     },
     "datePublished": frontmatter.date,
@@ -48,7 +50,13 @@ const BlogPostLayout = ({ frontmatter, children }: BlogPostLayoutProps) => {
     },
     "keywords": "dynamic QR codes, QR code generator, QR analytics, marketing technology",
     "articleSection": "Technology",
-    "wordCount": typeof children === 'string' ? children.split(' ').length : 1000
+    "wordCount": typeof children === 'string' ? children.split(' ').length : 1000,
+    "image": {
+      "@type": "ImageObject",
+      "url": "https://blastqr.com/img/qr-full.png",
+      "width": 1024,
+      "height": 1024
+    }
   };
 
   return (
@@ -58,6 +66,7 @@ const BlogPostLayout = ({ frontmatter, children }: BlogPostLayoutProps) => {
         description={frontmatter.description}
         ogType="article"
         canonical={`/blog/${slug}`}
+        ogImage="https://blastqr.com/img/qr-full.png"
         structuredData={structuredData}
       />
       

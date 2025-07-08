@@ -14,6 +14,7 @@ const LandingPage = () => {
         keywords="QR code generator, dynamic QR codes, intelligent QR codes, QR analytics, custom QR codes, free QR generator"
         ogType="website"
         canonical="/"
+        ogImage="https://blastqr.com/img/qr-full.png"
       />
 
       <div className="min-h-screen bg-background">

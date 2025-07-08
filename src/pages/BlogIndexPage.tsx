@@ -53,6 +53,7 @@ const BlogIndexPage = () => {
         description="Tutorials, tips, and articles on creating effective QR codes, dynamic QR technology, and marketing best practices."
         keywords="QR code blog, dynamic QR codes, QR code marketing, QR code tutorials, QR analytics"
         canonical="/blog"
+        ogImage="https://blastqr.com/img/qr-full.png"
         structuredData={structuredData}
       />
       
