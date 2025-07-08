@@ -35,13 +35,7 @@ export const SEO = ({
   const fullTitle = title ? `${title} | Blast QR` : defaultMeta.title;
   const metaDescription = description || defaultMeta.description;
   const metaKeywords = keywords || defaultMeta.keywords;
-  // Ensure absolute URL for social sharing
-  const getAbsoluteUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    return `https://blastqr.com${url}`;
-  };
-  
-  const metaImage = getAbsoluteUrl(ogImage || defaultMeta.ogImage);
+  const metaImage = ogImage || defaultMeta.ogImage;
   const canonicalUrl = canonical || typeof window !== 'undefined' ? window.location.href : '';
 
   return (
@@ -60,9 +54,10 @@ export const SEO = ({
       <meta property="og:description" content={metaDescription} />
       <meta property="og:type" content={ogType} />
       <meta property="og:image" content={metaImage} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
+      <meta property="og:image:width" content="1024" />
+      <meta property="og:image:height" content="1024" />
       <meta property="og:image:alt" content="Blast QR - Dynamic QR Code Generator" />
+      <meta property="og:image:type" content="image/png" />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:site_name" content="Blast QR" />
       <meta property="og:locale" content="en_GB" />
