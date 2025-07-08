@@ -49,20 +49,36 @@ vi.mock('@/components/ui/input', () => ({
   Input: (props: any) => <input {...props} />,
 }));
 
-vi.mock('@/components/ui/radio-group', () => ({
-  RadioGroup: ({ value, onValueChange, disabled, children }: any) => (
-    <div role="radiogroup" onChange={(e: any) => {
-      if (e.target.type === 'radio') {
-        onValueChange(e.target.value);
-      }
-    }}>
-      {children}
-    </div>
-  ),
-  RadioGroupItem: ({ value, id }: any) => (
-    <input type="radio" value={value} id={id} name="branding-style" />
-  ),
-}));
+vi.mock('@/components/ui/radio-group', () => {
+  const React = require('react');
+  const RadioGroupContext = React.createContext(false);
+  
+  return {
+    RadioGroup: ({ value, onValueChange, disabled, children }: any) => (
+      <RadioGroupContext.Provider value={disabled}>
+        <div role="radiogroup" {...(disabled && { disabled: true })} onChange={(e: any) => {
+          if (e.target.type === 'radio' && !disabled) {
+            onValueChange(e.target.value);
+          }
+        }}>
+          {children}
+        </div>
+      </RadioGroupContext.Provider>
+    ),
+    RadioGroupItem: ({ value, id }: any) => {
+      const disabled = React.useContext(RadioGroupContext);
+      return (
+        <input 
+          type="radio" 
+          value={value} 
+          id={id} 
+          name="branding-style" 
+          disabled={disabled}
+        />
+      );
+    },
+  };
+});
 
 vi.mock('@/components/ProFeatureGuard', () => ({
   default: ({ children }: any) => (
@@ -113,17 +129,23 @@ describe('BrandingManager', () => {
       });
     });
 
-    it('should disable all controls for free users', () => {
+    it('should disable all controls for free users', async () => {
       render(<BrandingManager {...defaultProps} />);
       
-      const toggle = screen.getByRole('switch');
-      expect(toggle).toBeDisabled();
+      // Wait for the component to check pro status
+      await waitFor(() => {
+        const toggle = screen.getByRole('switch');
+        expect(toggle).toBeDisabled();
+      });
       
       const slider = screen.getByRole('slider');
       expect(slider).toBeDisabled();
       
-      const radioGroup = screen.getByRole('radiogroup');
-      expect(radioGroup).toHaveAttribute('disabled');
+      // Note: radiogroups don't have a disabled attribute, individual radio buttons do
+      const radioButtons = screen.getAllByRole('radio');
+      radioButtons.forEach(button => {
+        expect(button).toBeDisabled();
+      });
     });
 
     it('should show upgrade prompt for free users', async () => {
@@ -153,21 +175,33 @@ describe('BrandingManager', () => {
       });
     });
 
-    it('should enable all controls for pro users', () => {
+    it('should enable all controls for pro users', async () => {
       render(<BrandingManager {...defaultProps} />);
       
-      const toggle = screen.getByRole('switch');
-      expect(toggle).not.toBeDisabled();
+      // Wait for the component to check pro status
+      await waitFor(() => {
+        const toggle = screen.getByRole('switch');
+        expect(toggle).not.toBeDisabled();
+      });
       
       const slider = screen.getByRole('slider');
       expect(slider).not.toBeDisabled();
       
-      const radioGroup = screen.getByRole('radiogroup');
-      expect(radioGroup).not.toHaveAttribute('disabled');
+      // Check individual radio buttons are enabled
+      const radioButtons = screen.getAllByRole('radio');
+      radioButtons.forEach(button => {
+        expect(button).not.toBeDisabled();
+      });
     });
 
-    it('should toggle branding enabled state', () => {
+    it('should toggle branding enabled state', async () => {
       render(<BrandingManager {...defaultProps} />);
+      
+      // Wait for the component to enable controls
+      await waitFor(() => {
+        const toggle = screen.getByRole('switch');
+        expect(toggle).not.toBeDisabled();
+      });
       
       const toggle = screen.getByRole('switch');
       fireEvent.click(toggle);
@@ -175,8 +209,14 @@ describe('BrandingManager', () => {
       expect(defaultProps.setBrandingEnabled).toHaveBeenCalledWith(true);
     });
 
-    it('should update branding duration', () => {
+    it('should update branding duration', async () => {
       render(<BrandingManager {...defaultProps} />);
+      
+      // Wait for the component to enable controls
+      await waitFor(() => {
+        const slider = screen.getByRole('slider');
+        expect(slider).not.toBeDisabled();
+      });
       
       const slider = screen.getByRole('slider');
       fireEvent.change(slider, { target: { value: '5' } });
@@ -184,8 +224,14 @@ describe('BrandingManager', () => {
       expect(defaultProps.setBrandingDuration).toHaveBeenCalledWith(5);
     });
 
-    it('should update branding style', () => {
+    it('should update branding style', async () => {
       render(<BrandingManager {...defaultProps} />);
+      
+      // Wait for the component to enable controls
+      await waitFor(() => {
+        const fullOption = screen.getByLabelText(/Full Branding/i);
+        expect(fullOption).not.toBeDisabled();
+      });
       
       const fullOption = screen.getByLabelText(/Full Branding/i);
       fireEvent.click(fullOption);
@@ -193,21 +239,28 @@ describe('BrandingManager', () => {
       expect(defaultProps.setBrandingStyle).toHaveBeenCalledWith('full');
     });
 
-    it('should show custom text input when custom style is selected', () => {
+    it('should show custom text input when custom style is selected', async () => {
       render(<BrandingManager {...defaultProps} brandingStyle="custom" />);
       
-      const customInput = screen.getByPlaceholderText(/Your custom message/i);
-      expect(customInput).toBeInTheDocument();
+      // Wait for the component to load
+      await waitFor(() => {
+        const customInput = screen.getByPlaceholderText(/Your custom message/i);
+        expect(customInput).toBeInTheDocument();
+      });
       
+      const customInput = screen.getByPlaceholderText(/Your custom message/i);
       fireEvent.change(customInput, { target: { value: 'Custom text' } });
       expect(defaultProps.setCustomBrandingText).toHaveBeenCalledWith('Custom text');
     });
 
-    it('should not show custom text input for non-custom styles', () => {
+    it('should not show custom text input for non-custom styles', async () => {
       render(<BrandingManager {...defaultProps} brandingStyle="minimal" />);
       
-      const customInput = screen.queryByPlaceholderText(/Your custom message/i);
-      expect(customInput).not.toBeInTheDocument();
+      // Wait for the component to load and ensure custom input is not present
+      await waitFor(() => {
+        const customInput = screen.queryByPlaceholderText(/Your custom message/i);
+        expect(customInput).not.toBeInTheDocument();
+      });
     });
 
     it('should display current duration value', () => {
@@ -216,36 +269,48 @@ describe('BrandingManager', () => {
       expect(screen.getByText('Display Duration: 7 seconds')).toBeInTheDocument();
     });
 
-    it('should show preview section when branding is enabled', () => {
+    it('should show preview section when branding is enabled', async () => {
       render(<BrandingManager {...defaultProps} brandingEnabled={true} />);
       
-      expect(screen.getByText('Preview')).toBeInTheDocument();
+      // Wait for pro status to be loaded, then check for preview
+      await waitFor(() => {
+        expect(screen.getByText('Preview')).toBeInTheDocument();
+      });
     });
 
-    it('should show correct preview for minimal style', () => {
+    it('should show correct preview for minimal style', async () => {
       render(<BrandingManager {...defaultProps} brandingEnabled={true} brandingStyle="minimal" />);
       
-      expect(screen.getByText('QR Blast')).toBeInTheDocument();
-      expect(screen.getByText('Powered by QR Blast')).toBeInTheDocument();
+      // Wait for pro status and preview to be shown
+      await waitFor(() => {
+        expect(screen.getByText('Blast QR')).toBeInTheDocument();
+        expect(screen.getByText('Powered by Blast QR')).toBeInTheDocument();
+      });
     });
 
-    it('should show correct preview for full style', () => {
+    it('should show correct preview for full style', async () => {
       render(<BrandingManager {...defaultProps} brandingEnabled={true} brandingStyle="full" />);
       
-      expect(screen.getByText('QR Blast')).toBeInTheDocument();
-      expect(screen.getByText('Smart QR Codes for Modern Business')).toBeInTheDocument();
-      expect(screen.getByText(/Redirecting in/i)).toBeInTheDocument();
+      // Wait for pro status and preview to be shown
+      await waitFor(() => {
+        expect(screen.getByText('Blast QR')).toBeInTheDocument();
+        expect(screen.getByText('Smart QR Codes for Modern Business')).toBeInTheDocument();
+        expect(screen.getByText(/Redirecting in/i)).toBeInTheDocument();
+      });
     });
 
-    it('should show correct preview for custom style', () => {
+    it('should show correct preview for custom style', async () => {
       render(<BrandingManager {...defaultProps} 
         brandingEnabled={true} 
         brandingStyle="custom" 
         customBrandingText="My custom message" 
       />);
       
-      expect(screen.getByText('My custom message')).toBeInTheDocument();
-      expect(screen.getByText('Powered by QR Blast')).toBeInTheDocument();
+      // Wait for pro status and preview to be shown
+      await waitFor(() => {
+        expect(screen.getByText('My custom message')).toBeInTheDocument();
+        expect(screen.getByText('Powered by Blast QR')).toBeInTheDocument();
+      });
     });
   });
 
@@ -266,13 +331,23 @@ describe('BrandingManager', () => {
       });
     });
 
-    it('should have proper labels for all form controls', () => {
+    it('should have proper labels for all form controls', async () => {
       render(<BrandingManager {...defaultProps} />);
       
-      expect(screen.getByLabelText('Enable Branding Display')).toBeInTheDocument();
-      expect(screen.getByLabelText('Minimal')).toBeInTheDocument();
-      expect(screen.getByLabelText('Full Branding')).toBeInTheDocument();
-      expect(screen.getByLabelText('Custom')).toBeInTheDocument();
+      // Wait for component to load
+      await waitFor(() => {
+        expect(screen.getByLabelText('Enable Branding Display')).toBeInTheDocument();
+      });
+      
+      // For radio buttons, check by their text content since they have complex labels
+      expect(screen.getByText('Minimal')).toBeInTheDocument();
+      expect(screen.getByText('Full Branding')).toBeInTheDocument();
+      expect(screen.getByText('Custom')).toBeInTheDocument();
+      
+      // Check that the radio inputs exist
+      expect(screen.getByRole('radio', { name: /minimal/i })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /full branding/i })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /custom/i })).toBeInTheDocument();
     });
 
     it('should have proper ARIA attributes', () => {
