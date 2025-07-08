@@ -5,8 +5,22 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Function to extract asset paths from main index.html
+function getAssetPaths() {
+  const distIndexPath = path.join(__dirname, '..', 'dist', 'index.html');
+  const indexContent = fs.readFileSync(distIndexPath, 'utf-8');
+  
+  const jsAssetMatch = indexContent.match(/<script type="module" crossorigin src="([^"]+)"><\/script>/);
+  const cssAssetMatch = indexContent.match(/<link rel="stylesheet" crossorigin href="([^"]+)">/);
+  
+  return {
+    js: jsAssetMatch ? jsAssetMatch[1] : '/src/main.tsx',
+    css: cssAssetMatch ? cssAssetMatch[1] : ''
+  };
+}
+
 // Base HTML template
-const getHTMLTemplate = (frontmatter, slug) => `<!DOCTYPE html>
+const getHTMLTemplate = (frontmatter, slug, assets) => `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -47,6 +61,10 @@ const getHTMLTemplate = (frontmatter, slug) => `<!DOCTYPE html>
     <!-- Additional SEO -->
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#F59E0B" />
+    
+    <!-- Assets -->
+    <script type="module" crossorigin src="${assets.js}"></script>
+    ${assets.css ? `<link rel="stylesheet" crossorigin href="${assets.css}">` : ''}
     
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -97,7 +115,6 @@ const getHTMLTemplate = (frontmatter, slug) => `<!DOCTYPE html>
       <p>You need to enable JavaScript to read this blog post. This is a blog post about QR codes and dynamic QR technology.</p>
     </noscript>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>`;
 
@@ -149,6 +166,7 @@ function getBlogPosts() {
 // Function to generate HTML files for blog posts
 function generateBlogHTML() {
   const posts = getBlogPosts();
+  const assets = getAssetPaths();
   const distDir = path.join(__dirname, '..', 'dist');
   const blogDir = path.join(distDir, 'blog');
   
@@ -166,7 +184,7 @@ function generateBlogHTML() {
     }
     
     // Generate HTML
-    const html = getHTMLTemplate(post.frontmatter, post.slug);
+    const html = getHTMLTemplate(post.frontmatter, post.slug, assets);
     
     // Write index.html for the post
     fs.writeFileSync(path.join(postDir, 'index.html'), html);
@@ -175,6 +193,7 @@ function generateBlogHTML() {
   }
   
   console.log(`📝 Generated HTML files for ${posts.length} blog posts`);
+  console.log(`🔗 Using assets: JS=${assets.js}, CSS=${assets.css}`);
 }
 
 // Run the script
