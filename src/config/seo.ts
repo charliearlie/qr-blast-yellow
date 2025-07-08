@@ -9,9 +9,9 @@ export const SEO_CONFIG: Record<string, RouteMetadata> = {
   "/": {
     title: "Blast QR: Intelligent & Dynamic QR Code Generator",
     description:
-      "Create dynamic, intelligent QR codes that adapt to time, location, and your changing needs. Free QR code generator with analytics, security, and custom designs.",
+      "Create dynamic QR codes that adapt to time, location, and scan limits. Free, secure, and fully customizable with logos and colors.",
     keywords:
-      "QR code generator, dynamic QR codes, intelligent QR codes, QR analytics, custom QR codes, free QR generator, time-based QR codes, geo-fenced QR codes",
+      "dynamic QR code generator, editable QR codes, QR codes with analytics, time-aware QR codes, geo-fenced QR codes, scan-limited QR codes, password protected QR codes, custom QR code shapes, free QR code generator",
     ogType: "website",
   },
   "/generate": {
@@ -23,18 +23,18 @@ export const SEO_CONFIG: Record<string, RouteMetadata> = {
     ogType: "website",
   },
   "/dashboard": {
-    title: "My QR Codes Dashboard - Manage & Track Performance",
+    title: "My QR Codes Dashboard - Blast QR",
     description:
-      "Manage your QR codes, view detailed analytics, and track scan performance. Monitor user engagement and optimise your campaigns.",
+      "Manage your dynamic QR codes, view detailed analytics, and track scan performance in real-time. Monitor user engagement and optimize your campaigns.",
     keywords:
-      "QR code dashboard, QR analytics, QR management, QR tracking, QR performance",
+      "QR code dashboard, QR analytics, manage QR codes, track QR scans, QR performance",
     ogType: "website",
   },
   "/login": {
-    title: "Sign In - Access Your QR Analytics",
+    title: "Sign In - Blast QR",
     description:
-      "Sign in to access your QR code dashboard and view detailed analytics. Track scans, locations, and user engagement.",
-    keywords: "QR code login, QR analytics access, QR dashboard sign in",
+      "Sign in to access your Blast QR dashboard and unlock powerful features like QR code analytics, editing, and dynamic rules.",
+    keywords: "QR code login, QR analytics access, sign in QR generator",
     ogType: "website",
   },
   "/privacy": {
