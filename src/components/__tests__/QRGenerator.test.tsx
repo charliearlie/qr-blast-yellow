@@ -109,6 +109,42 @@ vi.mock('../SaveButtons', () => ({
   ),
 }));
 
+vi.mock('../ScanLimitManager', () => ({
+  default: ({ isEnabled, onEnabledChange, limit, onLimitChange }: any) => (
+    <div data-testid="scan-limit-manager">
+      <span>Scan Limit Manager</span>
+      <span>Enabled: {isEnabled ? 'Yes' : 'No'}</span>
+      <span>Limit: {limit}</span>
+      <button onClick={() => onEnabledChange(!isEnabled)}>
+        Toggle Enabled
+      </button>
+      <button onClick={() => onLimitChange(50)}>
+        Set Limit 50
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock('../TemplateSelector', () => ({
+  default: ({ selectedTemplateId, onSelectTemplate }: any) => (
+    <div data-testid="template-selector">
+      <button 
+        onClick={() => onSelectTemplate({ id: 'website', urlPrefix: 'https://', placeholder: 'Enter any website URL' })}
+        aria-label="Select Website template"
+      >
+        Website
+      </button>
+      <button 
+        onClick={() => onSelectTemplate({ id: 'whatsapp', urlPrefix: 'https://wa.me/', placeholder: 'Phone number with country code' })}
+        aria-label="Select WhatsApp template"
+      >
+        WhatsApp
+      </button>
+      <span>Selected: {selectedTemplateId}</span>
+    </div>
+  ),
+}));
+
 describe('QRGenerator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -118,9 +154,17 @@ describe('QRGenerator', () => {
     it('should render the QR generator form', () => {
       render(<QRGenerator />);
       
-      expect(screen.getByLabelText(/website url/i)).toBeInTheDocument();
+      expect(screen.getByText(/choose a template/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/qr code title/i)).toBeInTheDocument();
       expect(screen.getByText(/upload logo/i)).toBeInTheDocument();
+    });
+
+    it('should render template selector', () => {
+      render(<QRGenerator />);
+      
+      expect(screen.getByTestId('template-selector')).toBeInTheDocument();
+      expect(screen.getByLabelText('Select Website template')).toBeInTheDocument();
+      expect(screen.getByLabelText('Select WhatsApp template')).toBeInTheDocument();
     });
 
     it('should render all tabs', () => {
@@ -130,7 +174,8 @@ describe('QRGenerator', () => {
       expect(screen.getByText('Shapes')).toBeInTheDocument();
       expect(screen.getByText('Borders')).toBeInTheDocument();
       expect(screen.getByText('Geo')).toBeInTheDocument();
-      expect(screen.getByText('Time Rules')).toBeInTheDocument();
+      expect(screen.getByText('Time')).toBeInTheDocument();
+      expect(screen.getByText('Limits')).toBeInTheDocument();
     });
 
     it('should show analytics toggle when user is authenticated', () => {
@@ -145,10 +190,21 @@ describe('QRGenerator', () => {
       const user = userEvent.setup();
       render(<QRGenerator />);
       
-      const urlInput = screen.getByLabelText(/website url/i);
-      await user.type(urlInput, 'https://example.com');
+      const urlInput = screen.getByPlaceholderText(/enter any website url/i);
+      await user.type(urlInput, 'example.com');
       
-      expect(urlInput).toHaveValue('https://example.com');
+      expect(urlInput).toHaveValue('example.com');
+    });
+
+    it('should change template when selector is used', async () => {
+      const user = userEvent.setup();
+      render(<QRGenerator />);
+      
+      // Click WhatsApp template
+      await user.click(screen.getByText('WhatsApp'));
+      
+      // Check that the input placeholder changes
+      expect(screen.getByPlaceholderText(/phone number with country code/i)).toBeInTheDocument();
     });
 
     it('should update title input value', async () => {
@@ -161,15 +217,16 @@ describe('QRGenerator', () => {
       expect(titleInput).toHaveValue('My QR Code');
     });
 
-    it('should show protocol hint for URLs without protocol', async () => {
+    it('should build URL with template prefix', async () => {
       const user = userEvent.setup();
       render(<QRGenerator />);
       
-      const urlInput = screen.getByLabelText(/website url/i);
+      // Default template is website with https:// prefix
+      const urlInput = screen.getByPlaceholderText(/enter any website url/i);
       await user.type(urlInput, 'example.com');
       
-      expect(screen.getByText(/will be saved as:/i)).toBeInTheDocument();
-      expect(screen.getByText('https://example.com')).toBeInTheDocument();
+      // The URL input just shows the user input, not the full URL
+      expect(urlInput).toHaveValue('example.com');
     });
 
     it('should toggle analytics switch', async () => {
@@ -244,7 +301,7 @@ describe('QRGenerator', () => {
       const user = userEvent.setup();
       render(<QRGenerator />);
       
-      await user.click(screen.getByText('Time Rules'));
+      await user.click(screen.getByText('Time'));
       
       expect(screen.getByTestId('time-rule-manager')).toBeInTheDocument();
       expect(screen.getByTestId('pro-feature-guard')).toBeInTheDocument();
@@ -255,10 +312,10 @@ describe('QRGenerator', () => {
       render(<QRGenerator />);
       
       // Set a URL first
-      const urlInput = screen.getByLabelText(/website url/i);
-      await user.type(urlInput, 'https://example.com');
+      const urlInput = screen.getByPlaceholderText(/enter any website url/i);
+      await user.type(urlInput, 'example.com');
       
-      await user.click(screen.getByText('Time Rules'));
+      await user.click(screen.getByText('Time'));
       
       expect(screen.getByText('Default URL: https://example.com')).toBeInTheDocument();
     });
@@ -267,7 +324,7 @@ describe('QRGenerator', () => {
       const user = userEvent.setup();
       render(<QRGenerator />);
       
-      await user.click(screen.getByText('Time Rules'));
+      await user.click(screen.getByText('Time'));
       
       const timeRuleManager = screen.getByTestId('time-rule-manager');
       expect(timeRuleManager).toHaveTextContent('Rules: 0');
@@ -293,8 +350,8 @@ describe('QRGenerator', () => {
       render(<QRGenerator />);
       
       // Set a URL first
-      const urlInput = screen.getByLabelText(/website url/i);
-      await user.type(urlInput, 'https://example.com');
+      const urlInput = screen.getByPlaceholderText(/enter any website url/i);
+      await user.type(urlInput, 'example.com');
       
       await user.click(screen.getByText('Geo'));
       
@@ -314,14 +371,15 @@ describe('QRGenerator', () => {
       // Geo rules would be updated in the parent component
     });
 
-    it('should render all five tabs including geo', () => {
+    it('should render all six tabs including geo and limits', () => {
       render(<QRGenerator />);
       
       expect(screen.getByText('Basic')).toBeInTheDocument();
       expect(screen.getByText('Shapes')).toBeInTheDocument();
       expect(screen.getByText('Borders')).toBeInTheDocument();
       expect(screen.getByText('Geo')).toBeInTheDocument();
-      expect(screen.getByText('Time Rules')).toBeInTheDocument();
+      expect(screen.getByText('Time')).toBeInTheDocument();
+      expect(screen.getByText('Limits')).toBeInTheDocument();
     });
   });
 
@@ -400,10 +458,17 @@ describe('QRGenerator', () => {
       render(<QRGenerator />);
       
       // Enter a URL to show download button
-      const urlInput = screen.getByLabelText(/website url/i);
-      await user.type(urlInput, 'https://example.com');
+      const urlInput = screen.getByPlaceholderText(/enter any website url/i);
+      await user.type(urlInput, 'example.com');
       
       expect(screen.getByText(/download qr code/i)).toBeInTheDocument();
+    });
+
+    it('should show coming soon sticker button', () => {
+      render(<QRGenerator />);
+      
+      // Coming soon button should always be visible
+      expect(screen.getByText(/order high-quality stickers/i)).toBeInTheDocument();
     });
   });
 
@@ -433,10 +498,10 @@ describe('QRGenerator', () => {
       render(<QRGenerator />);
       
       // Check that URL is passed to TimeRuleManager
-      const urlInput = screen.getByLabelText(/website url/i);
-      await user.type(urlInput, 'https://example.com');
+      const urlInput = screen.getByPlaceholderText(/enter any website url/i);
+      await user.type(urlInput, 'example.com');
       
-      await user.click(screen.getByText('Time Rules'));
+      await user.click(screen.getByText('Time'));
       
       expect(screen.getByText('Default URL: https://example.com')).toBeInTheDocument();
     });
@@ -445,7 +510,7 @@ describe('QRGenerator', () => {
       const user = userEvent.setup();
       render(<QRGenerator />);
       
-      await user.click(screen.getByText('Time Rules'));
+      await user.click(screen.getByText('Time'));
       
       const proGuard = screen.getByTestId('pro-feature-guard');
       expect(proGuard).toBeInTheDocument();

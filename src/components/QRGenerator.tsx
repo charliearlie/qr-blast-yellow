@@ -18,9 +18,12 @@ import SaveButtons from './SaveButtons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import ScanLimitManager from './ScanLimitManager';
+import TemplateSelector from './TemplateSelector';
+import { templates, QRTemplate } from '@/config/templates';
 
 const QRGenerator = () => {
-  const [url, setUrl] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<QRTemplate>(templates.find(t => t.isDefault)!);
+  const [userInput, setUserInput] = useState('');
   const [title, setTitle] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
   const [qrColor, setQrColor] = useState('#000000');
@@ -44,6 +47,9 @@ const QRGenerator = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Derive the full URL from template and user input
+  const url = userInput.trim() ? `${selectedTemplate.urlPrefix}${userInput.trim()}` : '';
 
   // Check if colors are too similar
   const getColorContrast = (color1: string, color2: string) => {
@@ -108,6 +114,11 @@ const QRGenerator = () => {
   };
 
   useEffect(() => {
+    // Only generate QR code if user has entered content
+    if (!userInput.trim()) {
+      return;
+    }
+    
     const displayUrl = getDisplayUrl();
     console.log('=== QR CODE GENERATION ===');
     console.log('Display URL for QR code:', displayUrl);
@@ -117,8 +128,8 @@ const QRGenerator = () => {
     
     if (!qrCodeRef.current) {
       qrCodeRef.current = new QRCodeStyling({
-        width: 350,
-        height: 350,
+        width: 250,
+        height: 250,
         type: 'svg',
         data: displayUrl,
         dotsOptions: {
@@ -140,6 +151,7 @@ const QRGenerator = () => {
           crossOrigin: 'anonymous',
           margin: 10,
         },
+        image: logo || selectedTemplate.logoUrl,
       });
     }
 
@@ -160,14 +172,17 @@ const QRGenerator = () => {
       backgroundOptions: {
         color: bgColor,
       },
-      image: logo || undefined,
+      image: logo || selectedTemplate.logoUrl,
     });
 
-    if (qrRef.current) {
-      qrRef.current.innerHTML = '';
+    if (qrRef.current && qrCodeRef.current) {
+      // Clear existing content safely
+      while (qrRef.current.firstChild) {
+        qrRef.current.removeChild(qrRef.current.firstChild);
+      }
       qrCodeRef.current.append(qrRef.current);
     }
-  }, [url, qrColor, bgColor, dotsType, cornersSquareType, cornersDotType, logo, enableAnalytics, currentQRCode]);
+  }, [userInput, url, qrColor, bgColor, dotsType, cornersSquareType, cornersDotType, logo, enableAnalytics, currentQRCode, selectedTemplate]);
 
   const getDisplayUrl = () => {
     if (!url.trim()) return 'https://example.com';
@@ -179,9 +194,21 @@ const QRGenerator = () => {
     }
     
     // For all other cases (non-authenticated users or not saved yet), use direct URL
-    const directUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
-    console.log('Using direct URL:', directUrl);
-    return directUrl;
+    try {
+      const directUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+      // Validate URL format
+      new URL(directUrl);
+      console.log('Using direct URL:', directUrl);
+      return directUrl;
+    } catch (error) {
+      console.log('Invalid URL, using fallback:', url);
+      return 'https://example.com';
+    }
+  };
+
+  const handleSelectTemplate = (template: QRTemplate) => {
+    setSelectedTemplate(template);
+    setUserInput('');
   };
 
   const saveQRCode = async () => {
@@ -278,7 +305,7 @@ const QRGenerator = () => {
   const resetForm = () => {
     setCurrentQRCode(null);
     setTitle('');
-    setUrl('');
+    setUserInput('');
     setLogo(null);
     setTimeRules([]);
     setGeoRules([]);
@@ -327,9 +354,9 @@ const QRGenerator = () => {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-3 gap-8">
         {/* Input Section */}
-        <Card className="brutal-card p-8 space-y-6">
+        <Card className="brutal-card p-8 space-y-6 lg:col-span-2">
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto p-1 gap-1">
               <TabsTrigger value="basic" className="text-xs px-2 py-2">Basic</TabsTrigger>
@@ -357,14 +384,22 @@ const QRGenerator = () => {
               )}
               
               <div className="space-y-3">
+                <Label className="text-lg font-bold uppercase">Choose a Template</Label>
+                <TemplateSelector
+                  selectedTemplateId={selectedTemplate.id}
+                  onSelectTemplate={handleSelectTemplate}
+                />
+              </div>
+
+              <div className="space-y-3">
                 <Label htmlFor="url" className="text-lg font-bold uppercase">
-                  Website URL
+                  {selectedTemplate.name} URL
                 </Label>
                 <Input
                   id="url"
-                  placeholder="Enter: www.example.com or https://example.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder={selectedTemplate.placeholder}
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
                   className="brutal-input h-14 text-lg"
                 />
                 {url && !url.match(/^https?:\/\//) && (
@@ -555,8 +590,8 @@ const QRGenerator = () => {
         </Card>
 
         {/* Output Section */}
-        <div className="space-y-6">
-          <Card className="brutal-card p-8">
+        <div className="space-y-6 lg:col-span-1">
+          <Card className="brutal-card p-4">
             <div 
               className={`aspect-square bg-secondary flex items-center justify-center ${
                 borderStyle !== 'none' 
@@ -570,29 +605,36 @@ const QRGenerator = () => {
                 borderWidth: borderStyle !== 'none' ? `${borderWidth}px` : undefined,
               }}
             >
-              {url.trim() && isColorsValid ? (
+              {userInput.trim() && isColorsValid ? (
                 <div ref={qrRef} className="flex items-center justify-center" />
               ) : (
                 <div className="text-center text-muted-foreground">
                   <Palette className="w-12 h-12 mx-auto mb-4" />
                   <p className="font-bold">QR CODE WILL APPEAR HERE</p>
-                  {!isColorsValid && url.trim() && (
+                  {!isColorsValid && userInput.trim() && (
                     <p className="text-sm mt-2 text-destructive">Fix color contrast first</p>
                   )}
                 </div>
               )}
             </div>
-            {url.trim() && isColorsValid && (
+            {userInput.trim() && isColorsValid && (
               <Button
                 onClick={downloadQR}
-                className="w-full mt-6"
-                size="lg"
+                className="w-full mt-4"
+                size="sm"
               >
-                <Download className="w-5 h-5 mr-2" />
+                <Download className="w-4 h-4 mr-1" />
                 DOWNLOAD QR CODE
               </Button>
             )}
           </Card>
+
+          {/* Coming Soon Button - outside the QR preview card */}
+          <div className="text-center">
+            <Button variant="link" disabled className="text-sm">
+              Order High-Quality Stickers (Coming Soon)
+            </Button>
+          </div>
 
           {/* Ad Space */}
           <div className="ad-space p-8 min-h-[200px] flex items-center justify-center">

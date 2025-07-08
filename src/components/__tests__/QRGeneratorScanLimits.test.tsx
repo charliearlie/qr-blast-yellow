@@ -24,9 +24,15 @@ vi.mock('qr-code-styling', () => {
   };
 });
 
-// Mock ProFeatureGuard to always show content for testing
+// Mock ProFeatureGuard to show upgrade prompt for free users
 vi.mock('../ProFeatureGuard', () => ({
-  default: ({ children }: any) => <>{children}</>,
+  default: ({ children }: any) => {
+    const { user } = vi.mocked(useAuth)();
+    if (user?.user_metadata?.plan === 'free') {
+      return <div>Upgrade to Pro</div>;
+    }
+    return <>{children}</>;
+  },
 }));
 
 // Mock child components
