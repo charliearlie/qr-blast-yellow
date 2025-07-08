@@ -9,14 +9,15 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-sitemap.js && vite build",
-    "build:dev": "node scripts/generate-sitemap.js && vite build --mode development",
+    "build": "node scripts/generate-sitemap.js && vite build && node scripts/generate-blog-html.js",
+    "build:dev": "node scripts/generate-sitemap.js && vite build --mode development && node scripts/generate-blog-html.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "generate:sitemap": "node scripts/generate-sitemap.js"
+    "generate:sitemap": "node scripts/generate-sitemap.js",
+    "generate:blog-html": "node scripts/generate-blog-html.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
