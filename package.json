@@ -5,13 +5,12 @@
   "type": "module",
   "engines": {
     "node": ">=18.19.0",
-    "npm": ">=9.0.0"
+    "bun": ">=1.0.0"
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run generate:sitemap && vite build",
-    "build:dev": "npm run generate:sitemap && vite build --mode development",
-    "build:netlify": "npm install --legacy-peer-deps && npm run generate:sitemap && vite build",
+    "build": "node scripts/generate-sitemap.js && vite build",
+    "build:dev": "node scripts/generate-sitemap.js && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",

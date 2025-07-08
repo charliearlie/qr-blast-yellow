@@ -1,10 +1,9 @@
 [build]
-  command = "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm run generate:sitemap && vite build"
+  command = "rm -rf node_modules package-lock.json && bun install && bun run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18.19.0"
-  NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
 
 # Cache node_modules for faster builds
