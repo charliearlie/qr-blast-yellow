@@ -37,6 +37,8 @@ export interface QRCodeData {
     geoRules?: GeoRule[];
   };
   scan_count?: number;
+  scan_limit?: number | null;
+  expired_url?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -80,7 +82,7 @@ class QRService {
     return url;
   }
 
-  async createQRCode(data: QRCodeData): Promise<QRCodeData> {
+  async createQRCode(data: QRCodeData & { scan_limit?: number | null; expired_url?: string | null }): Promise<QRCodeData> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -108,6 +110,8 @@ class QRService {
       short_code: shortCode,
       short_url: shortUrl,
       qr_settings: data.qr_settings,
+      scan_limit: data.scan_limit || null,
+      expired_url: data.expired_url || null,
     };
 
     const { data: qrCode, error } = await supabase
@@ -124,21 +128,34 @@ class QRService {
     return qrCode;
   }
 
-  async updateQRCode(id: string, data: Partial<QRCodeData>): Promise<QRCodeData> {
+  async updateQRCode(id: string, data: Partial<QRCodeData> & { scan_limit?: number | null; expired_url?: string | null }): Promise<QRCodeData> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to update QR codes');
+    }
+
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.original_url !== undefined) updateData.original_url = data.original_url;
+    if (data.qr_settings !== undefined) updateData.qr_settings = data.qr_settings;
+    if (data.scan_limit !== undefined) updateData.scan_limit = data.scan_limit;
+    if (data.expired_url !== undefined) updateData.expired_url = data.expired_url;
+
     const { data: qrCode, error } = await supabase
       .from('qr_codes')
-      .update({
-        title: data.title,
-        original_url: data.original_url,
-        qr_settings: data.qr_settings,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
     if (error) {
-      throw new Error('Failed to update QR code');
+      console.error('Update error:', error);
+      throw new Error(`Failed to update QR code: ${error.message}`);
     }
 
     return qrCode;
@@ -166,6 +183,10 @@ class QRService {
     }
 
     return qrCodes || [];
+  }
+
+  async getQRCode(shortCode: string): Promise<QRCodeData | null> {
+    return this.getQRCodeByShortCode(shortCode);
   }
 
   async getQRCodeByShortCode(shortCode: string): Promise<QRCodeData | null> {

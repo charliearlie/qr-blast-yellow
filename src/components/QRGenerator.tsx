@@ -17,6 +17,7 @@ import ProFeatureGuard from './ProFeatureGuard';
 import SaveButtons from './SaveButtons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import ScanLimitManager from './ScanLimitManager';
 
 const QRGenerator = () => {
   const [url, setUrl] = useState('');
@@ -35,6 +36,9 @@ const QRGenerator = () => {
   const [currentQRCode, setCurrentQRCode] = useState<QRCodeData | null>(null);
   const [timeRules, setTimeRules] = useState<TimeRule[]>([]);
   const [geoRules, setGeoRules] = useState<GeoRule[]>([]);
+  const [scanLimitEnabled, setScanLimitEnabled] = useState(false);
+  const [scanLimit, setScanLimit] = useState<number | null>(100);
+  const [expiredUrl, setExpiredUrl] = useState('');
   const qrRef = useRef<HTMLDivElement>(null);
   const qrCodeRef = useRef<QRCodeStyling | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +234,8 @@ const QRGenerator = () => {
           timeRules,
           geoRules,
         },
+        scan_limit: scanLimitEnabled ? scanLimit : null,
+        expired_url: scanLimitEnabled ? expiredUrl : null,
       };
 
       console.log('Complete qrData object:', JSON.stringify(qrData, null, 2));
@@ -276,6 +282,9 @@ const QRGenerator = () => {
     setLogo(null);
     setTimeRules([]);
     setGeoRules([]);
+    setScanLimitEnabled(false);
+    setScanLimit(100);
+    setExpiredUrl('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -322,12 +331,13 @@ const QRGenerator = () => {
         {/* Input Section */}
         <Card className="brutal-card p-8 space-y-6">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="basic">Basic</TabsTrigger>
-              <TabsTrigger value="shapes">Shapes</TabsTrigger>
-              <TabsTrigger value="borders">Borders</TabsTrigger>
-              <TabsTrigger value="geo">Geo</TabsTrigger>
-              <TabsTrigger value="time">Time Rules</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto p-1 gap-1">
+              <TabsTrigger value="basic" className="text-xs px-2 py-2">Basic</TabsTrigger>
+              <TabsTrigger value="shapes" className="text-xs px-2 py-2">Shapes</TabsTrigger>
+              <TabsTrigger value="borders" className="text-xs px-2 py-2">Borders</TabsTrigger>
+              <TabsTrigger value="geo" className="text-xs px-2 py-2">Geo</TabsTrigger>
+              <TabsTrigger value="time" className="text-xs px-2 py-2">Time</TabsTrigger>
+              <TabsTrigger value="limits" className="text-xs px-2 py-2">Limits</TabsTrigger>
             </TabsList>
             
             <TabsContent value="basic" className="space-y-6">
@@ -514,6 +524,19 @@ const QRGenerator = () => {
                   rules={timeRules}
                   onRulesChange={setTimeRules}
                   defaultUrl={url || 'https://example.com'}
+                />
+              </ProFeatureGuard>
+            </TabsContent>
+            
+            <TabsContent value="limits">
+              <ProFeatureGuard>
+                <ScanLimitManager
+                  isEnabled={scanLimitEnabled}
+                  onEnabledChange={setScanLimitEnabled}
+                  limit={scanLimit}
+                  onLimitChange={setScanLimit}
+                  expiredUrl={expiredUrl}
+                  onExpiredUrlChange={setExpiredUrl}
                 />
               </ProFeatureGuard>
             </TabsContent>

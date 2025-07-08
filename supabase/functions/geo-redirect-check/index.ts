@@ -76,33 +76,24 @@ Deno.serve(async (req) => {
 
     console.log('📍 Using coordinates:', { latitude, longitude });
 
-    // Call the database function with the location data
-    const { data: redirectUrl, error } = await supabase.rpc('get_url_for_location', {
+    // Call the NEW master database function with the location data
+    const { data: redirectUrl, error } = await supabase.rpc('get_final_redirect_url', {
       p_short_code: shortCode,
       p_latitude: latitude,
       p_longitude: longitude,
     });
 
     if (error) {
-      console.error('Geo-redirect database error:', error);
-      // Fallback to the non-geo-aware function if there's an error
-      const { data: fallbackUrl, error: fallbackError } = await supabase.rpc('get_redirect_url_for_short_code', { 
-        p_short_code: shortCode 
-      });
-      
-      if (fallbackError) {
-        console.error('Fallback redirect error:', fallbackError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to get redirect URL' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
+      console.error('Master redirect error:', error);
+      // As a fallback, just return the original URL if the master function fails
+      const { data: qrCode } = await supabase
+        .from('qr_codes')
+        .select('original_url')
+        .eq('short_code', shortCode)
+        .single();
       
       return new Response(
-        JSON.stringify({ redirectUrl: fallbackUrl || null }),
+        JSON.stringify({ redirectUrl: qrCode?.original_url || null }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }

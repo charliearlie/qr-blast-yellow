@@ -186,4 +186,46 @@ All colors MUST be HSL.
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Clean Brutal Pill Tabs */
+  .brutal-pill {
+    @apply px-2 py-2 text-xs font-bold uppercase tracking-tight;
+    @apply bg-white border-2 border-black text-black;
+    @apply hover:bg-yellow-300 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)];
+    @apply data-[state=active]:bg-primary data-[state=active]:text-black;
+    @apply data-[state=active]:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)];
+    @apply transition-all duration-150;
+    @apply min-h-[40px] w-full flex items-center justify-center;
+    @apply rounded-none font-black;
+    @apply overflow-hidden whitespace-nowrap;
+  }
+
+  /* Dark mode brutal pills */
+  .dark .brutal-pill {
+    @apply bg-gray-900 border-2 border-white text-white;
+    @apply hover:bg-yellow-300 hover:text-black hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)];
+    @apply data-[state=active]:bg-primary data-[state=active]:text-black;
+    @apply data-[state=active]:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)];
+  }
+
+  /* Neo Brutalist Tab Styling */
+  .brutal-tab {
+    @apply text-xs font-black uppercase tracking-wide px-2 py-2;
+    @apply bg-white border-2 border-black text-black;
+    @apply hover:bg-yellow-300 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)];
+    @apply hover:-translate-y-[1px] hover:-translate-x-[1px];
+    @apply data-[state=active]:bg-primary data-[state=active]:text-black;
+    @apply data-[state=active]:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)];
+    @apply data-[state=active]:-translate-y-[1px] data-[state=active]:-translate-x-[1px];
+    @apply transition-all duration-150;
+    @apply rounded-none;
+  }
+
+  /* Dark mode brutal tabs */
+  .dark .brutal-tab {
+    @apply bg-gray-900 border-2 border-white text-white;
+    @apply hover:bg-yellow-300 hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)];
+    @apply data-[state=active]:bg-primary data-[state=active]:text-black;
+    @apply data-[state=active]:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)];
+  }
 }

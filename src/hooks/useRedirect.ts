@@ -27,7 +27,27 @@ export const useRedirect = (shortCode: string) => {
 
       console.log('✅ QR code found:', qrCode.id, qrCode.original_url);
 
-      // Step 2: Determine redirect strategy
+      // Step 2: Check if scan limit is reached (highest priority)
+      if (qrCode.scan_limit && qrCode.scan_count && qrCode.scan_count >= qrCode.scan_limit) {
+        console.log('🚫 Scan limit reached:', qrCode.scan_count, '/', qrCode.scan_limit);
+        if (qrCode.expired_url) {
+          console.log('🔄 Redirecting to expired URL:', qrCode.expired_url);
+          const expiredUrl = qrCode.expired_url.match(/^https?:\/\//) 
+            ? qrCode.expired_url 
+            : `https://${qrCode.expired_url}`;
+          
+          return {
+            qrCode,
+            finalUrl: expiredUrl,
+            securityResult: await securityService.checkUrl(expiredUrl)
+          };
+        } else {
+          console.log('❌ No expired URL set, throwing error');
+          throw new Error('This QR code has reached its scan limit');
+        }
+      }
+
+      // Step 3: Determine redirect strategy
       const hasGeoRules = qrCode.qr_settings?.geoRules && qrCode.qr_settings.geoRules.length > 0;
       console.log('🌍 Has geo rules:', hasGeoRules);
 
@@ -67,7 +87,7 @@ export const useRedirect = (shortCode: string) => {
         }
       }
 
-      // Step 3: Final fallback
+      // Step 4: Final fallback
       if (!finalUrl) {
         console.log('🔄 All methods failed, using original URL');
         finalUrl = qrCode.original_url;
@@ -77,19 +97,19 @@ export const useRedirect = (shortCode: string) => {
         throw new Error('No valid redirect URL found');
       }
 
-      // Step 4: Ensure proper protocol
+      // Step 5: Ensure proper protocol
       const processedUrl = finalUrl.match(/^https?:\/\//) 
         ? finalUrl 
         : `https://${finalUrl}`;
 
       console.log('🔗 Final processed URL:', processedUrl);
 
-      // Step 5: Security check
+      // Step 6: Security check
       console.log('🔍 Running security check...');
       const securityResult = await securityService.checkUrl(processedUrl);
       console.log('🔒 Security result:', securityResult);
 
-      // Step 6: Track analytics (async, don't wait)
+      // Step 7: Track analytics (async, don't wait)
       if (qrCode.id) {
         console.log('📊 Tracking analytics...');
         const userAgent = navigator.userAgent;
