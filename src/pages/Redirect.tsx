@@ -15,6 +15,8 @@ const Redirect = () => {
   const [showTransition, setShowTransition] = useState(false);
   const [showBranding, setShowBranding] = useState(false);
   const [brandingComplete, setBrandingComplete] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanPhase, setScanPhase] = useState<'initializing' | 'scanning' | 'verifying'>('initializing');
   
   const { data: redirectData, isLoading, error } = useRedirect(shortCode || '');
 
@@ -29,25 +31,44 @@ const Redirect = () => {
 
     if (!redirectData.securityResult) return;
 
-    // Show security results with transition
-    setTimeout(() => {
-      if (redirectData.securityResult.isSafe) {
-        setSecurityPhase('complete');
-        setShowTransition(true);
-        
-        // After transition, redirect immediately
+    // Animate scan progress
+    const phases = [
+      { phase: 'initializing' as const, progress: 30, duration: 600 },
+      { phase: 'scanning' as const, progress: 70, duration: 800 },
+      { phase: 'verifying' as const, progress: 100, duration: 600 }
+    ];
+
+    let currentPhase = 0;
+    const runPhase = () => {
+      if (currentPhase < phases.length) {
+        setScanPhase(phases[currentPhase].phase);
+        setScanProgress(phases[currentPhase].progress);
         setTimeout(() => {
-          setIsSecurityCheck(false);
-          console.log('Redirecting to:', redirectData.finalUrl);
-          window.location.href = redirectData.finalUrl;
-        }, 800); // Short delay for visual transition
+          currentPhase++;
+          runPhase();
+        }, phases[currentPhase].duration);
       } else {
-        // Block malicious URLs
-        setSecurityPhase('blocked');
-        setIsSecurityCheck(false);
-        console.log('🚨 Malicious URL blocked:', redirectData.finalUrl);
+        // Show security results with transition
+        if (redirectData.securityResult.isSafe) {
+          setSecurityPhase('complete');
+          setShowTransition(true);
+          
+          // After transition, redirect immediately
+          setTimeout(() => {
+            setIsSecurityCheck(false);
+            console.log('Redirecting to:', redirectData.finalUrl);
+            window.location.href = redirectData.finalUrl;
+          }, 800); // Short delay for visual transition
+        } else {
+          // Block malicious URLs
+          setSecurityPhase('blocked');
+          setIsSecurityCheck(false);
+          console.log('🚨 Malicious URL blocked:', redirectData.finalUrl);
+        }
       }
-    }, 1500); // Reduced from 2000ms to 1500ms
+    };
+
+    runPhase();
   }, [redirectData, brandingComplete]);
 
   const handleBrandingComplete = () => {
@@ -97,16 +118,32 @@ const Redirect = () => {
 
   const renderSecurityCheck = () => {
     if (securityPhase === 'checking') {
+      const phaseText = {
+        initializing: 'Initializing security protocols...',
+        scanning: 'Scanning destination...',
+        verifying: 'Verifying safety...'
+      };
+
       return (
         <>
-          <div className="relative">
-            <img src="/img/shield.png" alt="Security Shield" className="w-20 h-20 mx-auto animate-pulse" />
-            <Clock className="w-6 h-6 absolute -top-1 -right-1 text-blue-500 bg-background rounded-full animate-spin" />
+          <div className="relative w-24 h-24 mx-auto">
+            <img src="/img/shield.png" alt="Security Shield" className="w-20 h-20 absolute inset-2 shield-scanning z-10" />
+            <div className="radar-line"></div>
+            <CheckCircle className="w-6 h-6 absolute -top-1 -right-1 text-blue-500 bg-background rounded-full opacity-0" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold uppercase mb-2 text-blue-600">Security Scan</h1>
-            <p className="text-muted-foreground">
-              Verifying destination safety...
+          <div className="space-y-4">
+            <h1 className="text-3xl font-black uppercase tracking-wider text-blue-600">Security Scan</h1>
+            <div className="w-full max-w-xs mx-auto">
+              <div className="relative h-2 bg-secondary rounded-full overflow-hidden border-2 border-black">
+                <div 
+                  className="absolute inset-y-0 left-0 bg-primary transition-all duration-500 ease-out"
+                  style={{ width: `${scanProgress}%` }}
+                />
+              </div>
+              <p className="text-xs font-bold mt-2 text-muted-foreground">{scanProgress}% Complete</p>
+            </div>
+            <p className="text-sm font-medium typewriter-text inline-block">
+              {phaseText[scanPhase]}
             </p>
           </div>
         </>
@@ -115,34 +152,34 @@ const Redirect = () => {
 
     if (securityPhase === 'blocked') {
       return (
-        <>
-          <div className="relative">
-            <img src="/img/shield.png" alt="Security Shield" className="w-20 h-20 mx-auto" />
-            <XCircle className="w-6 h-6 absolute -top-1 -right-1 text-red-500 bg-background rounded-full" />
+        <div className="animate-[subtle-shake_0.5s_ease-in-out]">
+          <div className="relative w-24 h-24 mx-auto">
+            <img src="/img/shield.png" alt="Security Shield" className="w-20 h-20 absolute inset-2" />
+            <XCircle className="w-7 h-7 absolute -top-2 -right-2 text-red-500 bg-background rounded-full border-2 border-red-500 animate-pulse" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold uppercase mb-2 text-red-600">⚠️ Threat Detected</h1>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-black uppercase tracking-wider text-red-600">⚠️ Threat Detected</h1>
             <p className="text-red-600 font-bold">
               This website has been blocked for your safety
             </p>
           </div>
-        </>
+        </div>
       );
     }
 
     // securityPhase === 'complete' with transition
     return (
       <>
-        <div className="relative">
+        <div className="relative w-24 h-24 mx-auto">
           <img 
             src={showTransition ? "/img/smile.png" : "/img/shield.png"} 
             alt={showTransition ? "Safe Destination" : "Security Shield"} 
-            className={`w-20 h-20 mx-auto transition-all duration-700 ${showTransition ? 'scale-110' : ''}`} 
+            className={`w-20 h-20 absolute inset-2 transition-all duration-700 ${showTransition ? 'scale-110' : ''}`} 
           />
-          <CheckCircle className="w-6 h-6 absolute -top-1 -right-1 text-green-500 bg-background rounded-full" />
+          <CheckCircle className="w-7 h-7 absolute -top-2 -right-2 text-green-500 bg-background rounded-full border-2 border-green-500 animate-[check-bounce_0.6s_ease-out]" />
         </div>
-        <div>
-          <h1 className="text-2xl font-bold uppercase mb-2 text-green-600">✓ Destination Verified</h1>
+        <div className="space-y-3">
+          <h1 className="text-3xl font-black uppercase tracking-wider text-green-600">✓ Destination Verified</h1>
           <p className="text-green-600 font-medium">
             Taking you there now...
           </p>
@@ -180,9 +217,9 @@ const Redirect = () => {
     };
 
     const getBorderColor = () => {
-      if (securityPhase === 'blocked') return 'border-red-500 bg-red-50';
-      if (securityResult.score >= 50) return 'border-green-500 bg-green-50';
-      return 'border-orange-500 bg-orange-50';
+      if (securityPhase === 'blocked') return 'border-red-500 bg-gradient-to-br from-red-50 to-red-100';
+      if (securityResult.score >= 50) return 'border-green-500 bg-gradient-to-br from-green-50 to-green-100';
+      return 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100';
     };
 
     const getScoreText = () => {
@@ -217,7 +254,7 @@ const Redirect = () => {
           {securityResult.score >= 50 && (
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle className="w-4 h-4" />
-              <span className="text-xs font-medium">Safe to visit</span>
+              <span className="text-xs font-medium security-shimmer">Safe to visit</span>
             </div>
           )}
         </div>
@@ -300,12 +337,12 @@ const Redirect = () => {
             </div>
           )}
 
-          <div className="text-xs text-muted-foreground">
-            <p className="flex items-center justify-center gap-2">
-              <img src="/img/shield.png" alt="Security Shield" className="w-3 h-3" />
+          <div className="text-xs text-muted-foreground pt-4 border-t border-dashed border-gray-300 space-y-1">
+            <p className="flex items-center justify-center gap-2 font-medium">
+              <img src="/img/shield.png" alt="Security Shield" className="w-4 h-4" />
               Protected by QR Blast Security
             </p>
-            <p>Real-time destination verification</p>
+            <p className="text-[10px] opacity-75">Real-time destination verification</p>
           </div>
             </div>
           </Card>
