@@ -3,6 +3,78 @@
 ## Project Overview
 QR Blast is a dynamic QR code generation platform with advanced features like time-based rules, geo-fencing, and scan limits. The application uses React, TypeScript, Supabase, and follows a Test-Driven Development (TDD) approach.
 
+## Tech Stack & Build Configuration
+
+### Core Technologies
+- **Frontend Framework**: React 18 with TypeScript
+- **Build Tool**: Vite (with MDX support for blog)
+- **Styling**: Tailwind CSS with "brutal" design system
+- **UI Components**: Radix UI primitives + shadcn/ui
+- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions)
+- **QR Generation**: qr-code-styling library
+- **State Management**: React Context + React Query
+- **Form Handling**: React Hook Form with Zod validation
+- **Testing**: Vitest + React Testing Library
+- **Routing**: React Router v6
+
+### Build Process
+```bash
+# Development
+npm run dev              # Vite dev server on port 8080
+
+# Production Build
+npm run build           # Generates sitemap → Vite build → Blog HTML generation
+npm run build:dev       # Same but with development mode
+
+# Individual Scripts
+npm run generate:sitemap     # Generate sitemap.xml
+npm run generate:blog-html   # Generate static HTML for blog posts
+```
+
+### Key Configuration
+- **Path Aliasing**: `@/` → `./src/`
+- **Static Assets**: Served from `public/` directory
+- **Environment**: Node >=18.19.0 or Bun >=1.0.0
+
+## Project Structure
+
+```
+qr-blast-yellow/
+├── src/
+│   ├── components/         # React components
+│   │   ├── ui/            # shadcn/ui components
+│   │   └── __tests__/     # Component tests
+│   ├── services/          # Business logic layer
+│   ├── hooks/             # Custom React hooks
+│   ├── pages/             # Route components
+│   ├── content/blog/      # MDX blog posts
+│   └── integrations/      # External service configs
+├── public/                # Static assets (ads.txt, favicon, etc.)
+├── supabase/
+│   ├── migrations/        # Database migrations
+│   └── functions/         # Edge Functions
+├── scripts/               # Build utilities
+└── dist/                  # Build output
+```
+
+## Routing Structure
+
+### Public Routes
+- `/` - Landing page
+- `/login` - Authentication page
+- `/blog` - Blog index
+- `/blog/:slug` - Individual blog posts (MDX)
+- `/r/:shortCode` - QR code redirect handler
+
+### Protected Routes (Require Authentication)
+- `/generate` - QR code generator
+- `/dashboard` - User's QR code dashboard
+- `/qr/:id` - QR code detail view
+- `/analytics/:id` - Analytics dashboard
+- `/edit/:id` - Edit QR code
+
+All routes except login and redirect use the Layout wrapper component.
+
 ## Development Approach
 
 ### Test-Driven Development (TDD)
@@ -111,9 +183,96 @@ npm run typecheck
 npm test
 ```
 
+## Key Features
+
+### Free Features
+- Basic QR code generation with URL input
+- Customizable colors with contrast validation
+- Shape customization (dots, corners, corner dots)
+- Border styles and colors
+- Logo upload capability
+- Template selection
+- Direct PNG download
+- "Suggest from URL" automatic branding
+
+### Pro Features (Currently Free with Authentication)
+All pro features use `LoginWall` component for access control:
+
+1. **Time-Based Rules** (`TimeRuleManager`)
+   - Schedule different URLs by time of day
+   - UTC time conversion
+   - Multiple rules with labels
+
+2. **Geo-Fencing** (`GeoRuleManager`)
+   - Location-based redirects
+   - Radius definition in kilometers
+   - Multiple geo rules
+
+3. **Scan Limits** (`ScanLimitManager`)
+   - Set maximum scan count
+   - Custom expired URL redirect
+   - Scan tracking
+
+4. **Branding Display** (`BrandingManager`)
+   - Pre-redirect branding screen
+   - Duration: 1-10 seconds
+   - Styles: minimal, full, custom
+
+## Database Schema
+
+### Tables
+1. **qr_codes**
+   - id, user_id, title, original_url
+   - short_code (unique), short_url
+   - qr_settings (JSONB), scan_count
+   - scan_limit, expired_url
+   - branding_settings (JSONB)
+   - timestamps
+
+2. **qr_analytics**
+   - id, qr_code_id, scanned_at
+   - ip_address, user_agent, referer
+   - country, city
+   - device_type, browser
+
+### Key Migrations
+1. Core tables with RLS policies
+2. Time-aware redirect function
+3. Geo-aware redirect function
+4. Time rules midnight fix
+5. Scan limits feature
+6. Master redirect function (consolidates all logic)
+7. Branding settings
+
+### Edge Functions
+- **security-check**: URL validation and safety checks
+- **geo-redirect-check**: Location-based redirect logic
+- **url-inspector**: Favicon and theme extraction
+
+## Core Components
+
+### Main Components
+- `QRGenerator`: Main QR creation interface with tabs
+- `QRCodeManager`: Dashboard for saved QR codes
+- `AnalyticsDashboard`: Detailed analytics view
+- `QRCodePreview`: Live preview component
+
+### Service Layer
+- `qrService.ts`: CRUD operations for QR codes
+- `securityService.ts`: URL security validation
+- Analytics tracking and export
+
+### Authentication
+- Supabase Auth with Google OAuth
+- `useAuth` hook for auth state
+- User metadata stores plan info
+
 ## Important Notes
 - Always follow TDD approach for new features
 - Maintain consistency with existing code patterns
 - Document complex logic with clear comments
 - Ensure all pro features are properly paywalled
 - Test edge cases and error scenarios
+- Use LoginWall instead of ProFeatureGuard for feature gating
+- All timestamps use UTC for consistency
+- RLS policies enforce data isolation
