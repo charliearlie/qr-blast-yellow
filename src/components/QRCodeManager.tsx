@@ -88,6 +88,18 @@ const QRCodeManager = ({ onCreateNew }: QRCodeManagerProps) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const formatTimestamp = (dateString?: string | null): string => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -190,9 +202,10 @@ const QRCodeManager = ({ onCreateNew }: QRCodeManagerProps) => {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>{qrCode.created_at ? formatDate(qrCode.created_at) : 'Unknown'}</span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
+                    <span><strong>Created:</strong> {qrCode.created_at ? formatDate(qrCode.created_at) : 'N/A'}</span>
+                    <span className="text-primary"><strong>First Scan:</strong> {formatTimestamp(qrCode.first_scanned_at)}</span>
+                    <span className="text-green-600"><strong>Last Scan:</strong> {formatTimestamp(qrCode.last_scanned_at)}</span>
                   </div>
                 </div>
               </div>

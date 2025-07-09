@@ -45,6 +45,8 @@ export interface QRCodeData {
   custom_branding_text?: string | null;
   created_at?: string;
   updated_at?: string;
+  first_scanned_at?: string | null;
+  last_scanned_at?: string | null;
 }
 
 export interface QRAnalytics {
@@ -271,12 +273,12 @@ class QRService {
       console.error('Failed to record analytics:', analyticsError);
     }
 
-    // Increment scan count
-    const { error: countError } = await supabase
-      .rpc('increment_scan_count', { qr_code_uuid: qrCodeId });
+    // Update scan metadata (count and timestamps)
+    const { error: metadataError } = await supabase
+      .rpc('update_scan_metadata', { p_qr_code_id: qrCodeId });
 
-    if (countError) {
-      console.error('Failed to increment scan count:', countError);
+    if (metadataError) {
+      console.error('Failed to update scan metadata:', metadataError);
     }
   }
 
