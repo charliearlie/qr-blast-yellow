@@ -5,6 +5,63 @@ import { Button } from "@/components/ui/button";
 import { Download, Maximize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Separate component for modal QR code to handle its own rendering
+const ModalQRCode: React.FC<{ url: string; settings: any; containerStyle: React.CSSProperties }> = ({ url, settings, containerStyle }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<QRCodeStyling | null>(null);
+
+  const createQROptions = useCallback((width: number, height: number) => ({
+    width,
+    height,
+    type: "svg" as const,
+    data: url,
+    dotsOptions: {
+      color: settings?.qrColor || "#000000",
+      type: (settings?.dotsType || "square") as any,
+    },
+    cornersSquareOptions: {
+      color: settings?.qrColor || "#000000",
+      type: (settings?.cornersSquareType || "square") as any,
+    },
+    cornersDotOptions: {
+      color: settings?.qrColor || "#000000",
+      type: (settings?.cornersDotType || "square") as any,
+    },
+    backgroundOptions: {
+      color: settings?.bgColor || "#FFFFFF",
+    },
+    imageOptions: {
+      crossOrigin: "anonymous" as const,
+      margin: 10,
+    },
+    image: settings?.logo || undefined,
+  }), [url, settings]);
+
+  React.useLayoutEffect(() => {
+    if (!modalRef.current || !url) return;
+
+    const options = createQROptions(300, 300);
+    
+    if (!qrRef.current) {
+      qrRef.current = new QRCodeStyling(options);
+    } else {
+      qrRef.current.update(options);
+    }
+
+    modalRef.current.innerHTML = "";
+    qrRef.current.append(modalRef.current);
+  }, [url, settings, createQROptions]);
+
+  return (
+    <div 
+      ref={modalRef}
+      style={containerStyle}
+      className="qr-modal-container bg-white p-4 border-2 border-black"
+      data-testid="modal-qr-container"
+    />
+  );
+};
+
 interface QRCodePreviewProps {
   url: string;
   settings: any;
@@ -22,7 +79,6 @@ export const QRCodePreview: React.FC<QRCodePreviewProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
   const qrCodeRef = useRef<QRCodeStyling | null>(null);
   const { toast } = useToast();
 
@@ -68,13 +124,6 @@ export const QRCodePreview: React.FC<QRCodePreviewProps> = ({
     qrCodeRef.current.append(ref.current);
   }, [url, settings, size, createQROptions]);
 
-  const renderModalQRCode = useCallback(() => {
-    if (!showModal || !url || !modalRef.current) return;
-
-    const modalQr = new QRCodeStyling(createQROptions(300, 300));
-    modalRef.current.innerHTML = "";
-    modalQr.append(modalRef.current);
-  }, [showModal, url, settings, createQROptions]);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -115,11 +164,6 @@ export const QRCodePreview: React.FC<QRCodePreviewProps> = ({
   React.useLayoutEffect(() => {
     renderQRCode();
   }, [renderQRCode]);
-
-  // Render modal QR code when modal opens
-  React.useLayoutEffect(() => {
-    renderModalQRCode();
-  }, [renderModalQRCode]);
 
   if (!url) {
     return (
@@ -168,20 +212,30 @@ export const QRCodePreview: React.FC<QRCodePreviewProps> = ({
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="brutal-card max-w-md">
-          <div className="flex flex-col items-center gap-4">
-            <h3 className="text-2xl font-bold uppercase">QR Code Preview</h3>
-            <div 
-              ref={modalRef}
-              style={containerStyle}
-              className="qr-modal-container"
-            />
-            <div className="flex gap-2 w-full">
+          <div className="flex flex-col items-center gap-6 p-2">
+            <h3 className="text-2xl font-bold uppercase text-center">QR Code Preview</h3>
+            
+            <div className="flex flex-col items-center gap-3">
+              {showModal && (
+                <ModalQRCode 
+                  url={url} 
+                  settings={settings} 
+                  containerStyle={containerStyle}
+                />
+              )}
+              
+              <div className="text-center text-sm text-muted-foreground max-w-xs">
+                <p className="font-medium truncate">{url}</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 w-full">
               <Button
                 onClick={handleDownload}
                 className="brutal-button flex-1"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Download
+                Download PNG
               </Button>
               <Button
                 onClick={() => setShowModal(false)}
