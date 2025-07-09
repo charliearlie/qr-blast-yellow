@@ -11,9 +11,9 @@ export const featureData = {
         icon: "QrCode",
         items: [
           {
-            title: "Deep Customization",
+            title: "Deep Customisation",
             description:
-              "Control every aspect of your QR code's appearance. Match your brand with custom colors, styles, and shapes for the code's body and corners.",
+              "Control every aspect of your QR code's appearance. Match your brand with custom colours, styles, and shapes for the code's body and corners.",
             "sub-features": [
               "Custom QR and background colors with a contrast checker to ensure scannability.",
               "Multiple styles for data patterns, from classic squares to rounded dots.",
@@ -29,7 +29,7 @@ export const featureData = {
           {
             title: "Custom Borders",
             description:
-              "Frame your QR codes with customizable borders, including simple, thick, rounded, double, or dashed styles to make them stand out.",
+              "Frame your QR codes with customisable borders, including simple, thick, rounded, double, or dashed styles to make them stand out.",
             "sub-features": [],
           },
           {
