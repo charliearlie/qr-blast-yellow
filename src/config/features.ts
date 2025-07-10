@@ -21,18 +21,6 @@ export const featureData = {
             ],
           },
           {
-            title: "Logo Integration",
-            description:
-              "Seamlessly embed your company logo or any image directly into the center of your QR code to increase brand recognition and scan rates.",
-            "sub-features": [],
-          },
-          {
-            title: "Custom Borders",
-            description:
-              "Frame your QR codes with customisable borders, including simple, thick, rounded, double, or dashed styles to make them stand out.",
-            "sub-features": [],
-          },
-          {
             title: "High-Resolution Downloads",
             description:
               "Export your final QR code as a high-quality PNG, perfect for both digital use and print materials.",

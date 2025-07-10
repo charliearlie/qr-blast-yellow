@@ -16,6 +16,10 @@ import LoginPage from "./pages/LoginPage";
 import Redirect from "./pages/Redirect";
 import NotFoundPage from "./pages/NotFoundPage";
 import BlogIndexPage from "./pages/BlogIndexPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import CookiePolicyPage from "./pages/CookiePolicyPage";
+import GDPRPage from "./pages/GDPRPage";
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
@@ -76,6 +80,12 @@ const App = () => (
               {/* Blog Routes (no layout - they have their own) */}
               <Route path="/blog" element={<BlogIndexPage />} />
               <Route path="/blog/:slug" element={<BlogPostRoute />} />
+              
+              {/* Legal Routes (with layout) */}
+              <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
+              <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
+              <Route path="/cookies" element={<Layout><CookiePolicyPage /></Layout>} />
+              <Route path="/gdpr" element={<Layout><GDPRPage /></Layout>} />
               
               {/* Standalone Routes (no layout) */}
               <Route path="/login" element={<LoginPage />} />

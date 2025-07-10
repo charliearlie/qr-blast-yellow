@@ -1,4 +1,4 @@
-import { Github, Twitter, Mail, Heart } from 'lucide-react';
+import { Github, Twitter, Mail, Heart } from "lucide-react";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -13,17 +13,26 @@ const Footer = () => {
               <span className="text-primary">BLAST QR</span>
             </h3>
             <p className="text-gray-300 font-medium">
-              Create intelligent, dynamic QR codes that adapt to your needs. 
+              Create intelligent, dynamic QR codes that adapt to your needs.
               Free, secure, and powerful.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-primary transition-colors">
+              <a
+                href="#"
+                className="text-gray-300 hover:text-primary transition-colors"
+              >
                 <Twitter className="h-6 w-6" />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary transition-colors">
+              <a
+                href="#"
+                className="text-gray-300 hover:text-primary transition-colors"
+              >
                 <Github className="h-6 w-6" />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary transition-colors">
+              <a
+                href="#"
+                className="text-gray-300 hover:text-primary transition-colors"
+              >
                 <Mail className="h-6 w-6" />
               </a>
             </div>
@@ -36,22 +45,34 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="#generator" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="#generator"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Generator
                 </a>
               </li>
               <li>
-                <a href="#features" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="#features"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Features
                 </a>
               </li>
               <li>
-                <a href="/dashboard" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="/dashboard"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Dashboard
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="#"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   API Docs
                 </a>
               </li>
@@ -65,22 +86,34 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="#about" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="#about"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   About
                 </a>
               </li>
               <li>
-                <a href="/blog" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="/blog"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Blog
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="#"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Contact
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="#"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Careers
                 </a>
               </li>
@@ -94,22 +127,34 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="/privacy"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Privacy Policy
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="/terms"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Terms of Service
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="/cookies"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   Cookie Policy
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-primary transition-colors font-medium">
+                <a
+                  href="/gdpr"
+                  className="text-gray-300 hover:text-primary transition-colors font-medium"
+                >
                   GDPR
                 </a>
               </li>
@@ -123,11 +168,7 @@ const Footer = () => {
             <p className="text-gray-400 font-medium">
               © {currentYear} Blast QR. All rights reserved.
             </p>
-            <div className="flex items-center space-x-1 mt-4 md:mt-0">
-              <span className="text-gray-400 font-medium">Made with</span>
-              <Heart className="h-4 w-4 text-red-500 fill-current" />
-              <span className="text-gray-400 font-medium">for the web</span>
-            </div>
+            <div className="flex items-center space-x-1 mt-4 md:mt-0"></div>
           </div>
         </div>
       </div>
